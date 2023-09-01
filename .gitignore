@@ -1,0 +1,15 @@
+.DS_Store
+.idea/
+raha/.idea/
+.ipynb_checkpoints/
+__pycache__/
+*.egg-info/
+agModels/
+raha/__pycache__/
+
+*/datawigModels/
+*/AutogluonModels
+**/.env
+
+# HyFDMirmir
+HyFDMimir/
