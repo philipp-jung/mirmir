@@ -10,6 +10,7 @@ raha/__pycache__/
 */datawigModels/
 */AutogluonModels
 **/.env
+datasets/export_metanome/*
 
 # HyFDMirmir
 HyFDMimir/

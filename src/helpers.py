@@ -83,7 +83,7 @@ class Corrections:
         return self.correction_store[model_name]
 
     def assemble_pair_features(self) -> Dict[Tuple[int, int], Dict[str, List[float]]]:
-        """Return an object as d.pair_features has been in Baran."""
+        """Return features."""
         flat_corrections = self.flat_correction_store()
         pair_features = defaultdict(dict)
         for mi, model in enumerate(flat_corrections):

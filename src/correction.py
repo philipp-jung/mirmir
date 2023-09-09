@@ -42,21 +42,21 @@ class Cleaning:
                  vicinity_orders: List[int], vicinity_feature_generator: str, auto_instance_cache_model: bool,
                  n_best_pdeps: int, training_time_limit: int,
                  synth_tuples: int, synth_cleaning_threshold: float,
-                 test_synth_data_direction: str, pdep_features: Tuple[str], gpdep_threshold: float):
+                 test_synth_data_direction: str, pdep_features: Tuple[str], gpdep_threshold: float, fd_feature: str):
         """
         Parameters of the cleaning experiment.
-        @param labeling_budget: How many tuples are labeled by the user. Baran default is 20.
+        @param labeling_budget: How many tuples are labeled by the user. In the Baran publication, 20  labels are frequently used.
         @param classification_model: "ABC" for sklearn's AdaBoostClassifier with n_estimators=100, "CV" for
-        cross-validation. Baran default is "ABC".
+        cross-validation. Default is "ABC".
         @param clean_with_user_input: Take user input to clean data with. This will always improve cleaning performance,
         and is recommended to set to True as the default value. Handy to disable when debugging models.
         @param feature_generators: Six feature generators are available: 'auto_instance', 'domain_instance', 'fd', 'vicinity',
         'llm"master', 'llm_correction'.  Pass them as strings in a list to make Mirmir use them, e.g.
         ['domain_instance', 'vicinity', 'auto_instance'].
         @param vicinity_orders: The pdep approach enables the usage of higher-order dependencies to clean data. Each
-        order that Baran shall use is passed as an integer, e.g. [1, 2]. The Baran default is [1].
-        @param vicinity_feature_generator: How vicinity features are generated. Either 'pdep' or 'naive'. The Baran
-        default is 'naive'.
+        order used is passed as an integer, e.g. [1, 2]. Unary dependencies would be used by passing [1] for example.
+        @param vicinity_feature_generator: How vicinity features are generated. Either 'pdep' or 'naive'. Baran uses
+        'naive' by default.
         @param auto_instance_cache_model: Whether or not the AutoGluon model used in the auto_instance model is stored after
         training and used from cache. Otherwise, a model is retrained with every user-provided tuple. If true, reduces
         cleaning time significantly.
@@ -75,6 +75,7 @@ class Cleaning:
         pdep-score of the dependency providing the correction, and 'gpdep' for the gpdep-socre of said
         dependency.
         @param gpdep_threshold: Threshold a suggestion's gpdep score must pass before it is used to generate a feature.
+        @param fd_feature: Feature used by the the fd_instance imputer to make cleaning suggestions. Choose from ('gpdep', 'pdep', 'fd').
         """
 
         # Philipps changes
@@ -92,8 +93,9 @@ class Cleaning:
         self.TEST_SYNTH_DATA_DIRECTION = test_synth_data_direction
         self.PDEP_FEATURES = pdep_features
         self.GPDEP_THRESHOLD = gpdep_threshold
+        self.FD_FEATURE = fd_feature
 
-        # Inherited from Baran
+        # TODO check if these are necessary
         self.IGNORE_SIGN = "<<<IGNORE_THIS_VALUE>>>"
         self.VERBOSE = False
         self.SAVE_RESULTS = False
@@ -382,7 +384,7 @@ class Cleaning:
 
         # Begin Philipps Changes
         if "fd" in self.FEATURE_GENERATORS:
-            fd_corrections = pdep.fd_based_corrector(d.fd_inverted_gpdeps, d.fd_counts_dict, error_dictionary, 'gpdep')
+            fd_corrections = pdep.fd_based_corrector(d.fd_inverted_gpdeps, d.fd_counts_dict, error_dictionary, self.FD_FEATURE)
             if is_synth:
                 d.synth_corrections.get('fd')[error_cell] = fd_corrections
             else:
@@ -480,8 +482,8 @@ class Cleaning:
             imputer_corrections = self._imputer_based_corrector(d.imputer_models, error_dictionary)
 
             # Sometimes training an auto_instance model fails for a column, while it succeeds on other columns.
-            # If training failed for a column, imputer_corrections will be an empty dict. Which will lead
-            # to one less feature being added to values in that column. Which in turn is bad news.
+            # If training failed for a column, imputer_corrections will be an empty list. Which will lead
+            # to one less feature being added to values in that column. Which in turn is bad news in the ensemble.
             # To prevent this, I have imputer_corrections fall back to {}, which has length 1 and will create
             # a feature.
             if len(d.labeled_tuples) == self.LABELING_BUDGET and len(imputer_corrections) == 0:
@@ -718,7 +720,7 @@ class Cleaning:
 
     def run(self, d, random_seed):
         """
-        This method runs Baran on an input dataset to correct data errors.
+        This method runs Mirmir on an input dataset to correct data errors.
         """
         if self.VERBOSE:
             print("------------------------------------------------------------------------\n"
@@ -733,21 +735,23 @@ class Cleaning:
                   "------------------------------------------------------------------------")
         self.initialize_models(d)
 
-        if self.LABELING_BUDGET == 0:
-            self.prepare_augmented_models(d)
-            self.generate_features(d, synchronous=True)
-            self.generate_synth_features(d, synchronous=True)
-            self.binary_predict_corrections(d)
-
-        while len(d.labeled_tuples) < self.LABELING_BUDGET:
-            self.sample_tuple(d, random_seed=random_seed)
-            self.label_with_ground_truth(d)
-            self.update_models(d)
-            self.prepare_augmented_models(d)
-            self.generate_features(d, synchronous=True)
-            self.generate_synth_features(d, synchronous=True)
-            self.binary_predict_corrections(d)
-            self.clean_with_user_input(d)
+        ran_without_samples = False
+        while len(d.labeled_tuples) <= self.LABELING_BUDGET:
+            if self.LABELING_BUDGET == 0 and ran_without_samples == False:
+                self.prepare_augmented_models(d)
+                self.generate_features(d, synchronous=True)
+                self.generate_synth_features(d, synchronous=True)
+                self.binary_predict_corrections(d)
+                ran_without_samples = True
+            else:
+                self.sample_tuple(d, random_seed=random_seed)
+                self.label_with_ground_truth(d)
+                self.update_models(d)
+                self.prepare_augmented_models(d)
+                self.generate_features(d, synchronous=True)
+                self.generate_synth_features(d, synchronous=True)
+                self.binary_predict_corrections(d)
+                self.clean_with_user_input(d)
             if self.VERBOSE:
                 p, r, f = d.get_data_cleaning_evaluation(d.corrected_cells)[-3:]
                 print(
@@ -761,8 +765,7 @@ class Cleaning:
 if __name__ == "__main__":
     # configure Cleaning object
 
-    dataset_name = "hospital"
-    # error_class = 'imputer_simple_mcar'
+    dataset_name = "flights"
     error_class = 'simple_mcar'
     error_fraction = 1
     version = 1
@@ -774,14 +777,16 @@ if __name__ == "__main__":
     clean_with_user_input = True  # Careful: If set to False, d.corrected_cells will remain empty.
     gpdep_threshold = 0.3
     training_time_limit = 30
-    feature_generators = ['domain_instance', 'fd', 'auto_instance', 'llm_master', 'llm_correction']
+    #feature_generators = ['domain_instance', 'fd', 'auto_instance', 'llm_master', 'llm_correction']
+    feature_generators = [ 'fd', ]
     classification_model = "ABC"
     vicinity_orders = [1, 2]
     n_best_pdeps = 3
     n_rows = 1000
     vicinity_feature_generator = "pdep"
-    # pdep_features = ('pr', 'vote', 'pdep', 'gpdep')
     pdep_features = ['pr']
+    fd_feature = 'pr'
+
     test_synth_data_direction = 'user_data'
 
     # Set this parameter to keep runtimes low when debugging
@@ -790,8 +795,8 @@ if __name__ == "__main__":
 
     app = Cleaning(labeling_budget, classification_model, clean_with_user_input, feature_generators, vicinity_orders,
                      vicinity_feature_generator, auto_instance_cache_model, n_best_pdeps, training_time_limit,
-                     synth_tuples, synth_cleaning_threshold,
-                     test_synth_data_direction, pdep_features, gpdep_threshold)
+                     synth_tuples, synth_cleaning_threshold, test_synth_data_direction, pdep_features, gpdep_threshold,
+                     fd_feature)
     app.VERBOSE = True
     seed = 0
     correction_dictionary = app.run(data, seed)

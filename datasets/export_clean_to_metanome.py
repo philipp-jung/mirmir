@@ -5,12 +5,12 @@ def export_table(name: str, path: str, n_rows=None):
     if n_rows is not None:
         df_clean = df_clean.iloc[:n_rows, :]
 
-    df_clean.to_csv(f"export_metanome/{name}.csv")
+    df_clean.to_csv(f"export_metanome/{name}.csv", index=False)
     print(f'Created csv for dataset {name}')
 
 
 def main():
-    baran_dataset_ids = ["beers", "flights", "hospital", "tax", "rayyan", "toy", "debug", "synth-debug"]
+    baran_dataset_ids = ["beers", "flights", "hospital", "rayyan", "toy",]
     renuver_dataset_ids = ["bridges", "cars", "glass", "restaurant"]
     openml_dataset_ids = ["6", "137", "184", "1481", "41027"]
 
