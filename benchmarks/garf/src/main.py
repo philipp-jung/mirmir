@@ -40,7 +40,7 @@ def run(
 
     try:
         for order in [1, 0]:
-            att_reverse(dataset_name, order, models_base_path)
+            att_reverse(table_name_corrected, order, models_base_path)
 
             trainer = Trainer(
                 order=order,
@@ -52,7 +52,7 @@ def run(
                 d_H=config.d_h,
                 d_dropout=config.d_dropout,
                 generate_samples=config.generate_samples,
-                path_pos=dataset_name,
+                path_pos=table_name_corrected,
                 path_neg=path_neg,
                 path_rules=path_rules,
                 g_lr=config.g_lr,
@@ -82,11 +82,11 @@ def run(
             )
             trainer.save(g_weights_path, d_weights_path)
 
-            rule_len = rule_sample(path_rules, dataset_name, order)
+            rule_len = rule_sample(path_rules, table_name_corrected, order)
             trainer.train_rules(rule_len, path_rules)
-            trainer.filter(dataset_name)
-            att_reverse(dataset_name, 1, models_base_path)
-            trainer.repair(dataset_name)
+            trainer.filter(table_name_corrected)
+            att_reverse(table_name_corrected, 1, models_base_path)
+            trainer.repair(table_name_corrected)
 
     except Exception as e:
         exception_type = str(type(e).__name__)
