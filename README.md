@@ -2,7 +2,7 @@
 Mirmir is a state-of-the-art value cleaning system.
 
 ## Installation
-Mirmir can be executed on any platform using `conda`.
+Mirmir can be executed on any platform using `conda` or `mamba`.
 To install Mirmir on your machine, follow these steps:
 
 1) Install Miniforge3 on you machine.\
