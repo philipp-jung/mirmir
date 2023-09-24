@@ -52,7 +52,7 @@ def get_data_cleaning_evaluation(df_clean, df_dirty, df_corrected):
 
 
 def get_table_as_df(table_name, conn):
-    df = (pd.read_sql_query(f'SELECT * FROM {table_name_clean}', conn)
+    df = (pd.read_sql_query(f'SELECT * FROM {table_name}', conn, index_col='index')
                 .drop(columns="Label")
                 .astype(str))
     return df
