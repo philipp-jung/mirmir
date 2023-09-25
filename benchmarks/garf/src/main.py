@@ -102,7 +102,7 @@ def run(
                 n_sample=config.n_sample,
                 models_base_path=models_base_path,
             )
-            trainer.load(config.g_weights_path, config.d_weights_path)
+            trainer.load(g_weights_path, d_weights_path)
 
             rule_len = rule_sample(path_rules, table_name_corrected, order)
             trainer.train_rules(rule_len, path_rules)
