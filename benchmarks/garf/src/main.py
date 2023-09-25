@@ -20,8 +20,8 @@ def run(
 
     ##### GARF #####
     models_path = Path('models/')
-    table_name_clean = dataset_name
     table_name_corrected = f'{dataset_name}_copy'
+    table_name_clean = dataset_name
     table_name_dirty = f'{dataset_name}_dirty'
 
 
@@ -42,6 +42,7 @@ def run(
         for order in [1, 0]:
             att_reverse(table_name_corrected, order, models_base_path)
 
+            # Training SeqGAN
             trainer = Trainer(
                 order=order,
                 B=config.batch_size,
@@ -81,6 +82,27 @@ def run(
                 d_weights_path=d_weights_path,
             )
             trainer.save(g_weights_path, d_weights_path)
+
+            # Repairing
+            trainer = Trainer(
+                order=order,
+                B=1,  # important for repairing
+                T=config.max_length,
+                g_E=config.g_e,
+                g_H=config.g_h,
+                d_E=config.d_e,
+                d_H=config.d_h,
+                d_dropout=config.d_dropout,
+                generate_samples=config.generate_samples,
+                path_pos=table_name_corrected,
+                path_neg=path_neg,
+                path_rules=path_rules,
+                g_lr=config.g_lr,
+                d_lr=config.d_lr,
+                n_sample=config.n_sample,
+                models_base_path=models_base_path,
+            )
+            trainer.load(config.g_weights_path, config.d_weights_path)
 
             rule_len = rule_sample(path_rules, table_name_corrected, order)
             trainer.train_rules(rule_len, path_rules)
