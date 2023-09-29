@@ -1,12 +1,10 @@
-from pathlib import Path
-
+from SeqGAN.models import GeneratorPretraining, Discriminator
+from SeqGAN.utils import GeneratorPretrainingGenerator, DiscriminatorGenerator
+from SeqGAN.rl import Agent, Environment
+from keras.optimizers import Adam
+import os
 import numpy as np
 import tensorflow as tf
-from keras.optimizers import Adam
-
-from SeqGAN.models import Discriminator, GeneratorPretraining
-from SeqGAN.rl import Agent, Environment
-from SeqGAN.utils import DiscriminatorGenerator, GeneratorPretrainingGenerator
 
 sess = tf.compat.v1.Session()
 import keras.backend as K
@@ -15,7 +13,9 @@ K.set_session(sess)
 
 
 class Trainer(object):
-    """Manage training."""
+    """
+    Manage training
+    """
 
     def __init__(
         self,
@@ -55,25 +55,21 @@ class Trainer(object):
             self.path_pos, order=order, B=B, T=T, models_base_path=self.models_base_path, min_count=1
         )  # next method produces x, y_true data; both are the same data, e.g. [BOS, 8, 10, 6, 3, EOS], [8, 10, 6, 3, EOS]
         self.d_data = DiscriminatorGenerator(
-            path_pos=self.path_pos, order=order, path_neg=self.path_neg, B=self.B, shuffle=True
+            path_pos=self.path_pos, order=order, path_neg=self.path_neg, B=self.B, shuffle=True,
         )  # The next method produces pos data and neg data
 
         self.V = self.g_data.V  # Total vocabulary in the data
         self.agent = Agent(sess=sess, B=B, V=self.V, E=g_E, H=g_H, lr=g_lr, models_base_path=self.models_base_path)
         self.g_beta = Agent(sess=sess, B=B, V=self.V, E=g_E, H=g_H, lr=g_lr, models_base_path=self.models_base_path)
 
+
         self.discriminator = Discriminator(self.V, d_E, d_H, d_dropout)
-
         self.env = Environment(self.discriminator, self.g_data, self.g_beta, n_sample=n_sample)
-
-        self.generator_pre = GeneratorPretraining(
-            self.V, g_E, g_H
-        )  # A 4-layer neural network input-embedding-lstm-dense
-
+        self.generator_pre = GeneratorPretraining(self.V, g_E, g_H)  # A 4-layer neural network input-embedding-lstm-dense
         self.rule = {}
 
     def pre_train(
-        self, g_epochs=3, d_epochs=1, g_pre_path=None, d_pre_path=None, g_lr=1e-3, d_lr=1e-3
+        self, g_epochs=3, d_epochs=1, g_pre_path=None, d_pre_path=None, g_lr=1e-3, d_lr=1e-3,
     ):  # The actual parameters are given by the config
         self.pre_train_generator(g_epochs=g_epochs, g_pre_path=g_pre_path, lr=g_lr)
 
@@ -82,7 +78,7 @@ class Trainer(object):
     def pre_train_generator(self, g_epochs=3, g_pre_path=None, lr=1e-3):
         print("Pre-training generator")
         if g_pre_path is None:
-            self.g_pre_path = Path(self.models_base_path / "generator_pre.hdf5")
+            self.g_pre_path = self.models_base_path / "generator_pre.hdf5"
         else:
             self.g_pre_path = g_pre_path
 
@@ -92,7 +88,6 @@ class Trainer(object):
         )  # Training is performed, the optimizer is Adam, and the loss function is a categorical cross-entropy function for multi-classification
         print("Generator pre-training")
         self.generator_pre.summary()  # model.summary() in keras is used to output the status of the parameters of each layer of the model
-        # print("++++++++++++++++++++")
         self.generator_pre.fit_generator(  # The return value is a History object. Its History.history property is a record of the training loss and evaluation values for successive epochs, as well as the validation set loss and evaluation values
             self.g_data,  # This should be an instance of a generator or Sequence (keras.utils.Sequence) object
             steps_per_epoch=None,
@@ -104,7 +99,7 @@ class Trainer(object):
     def pre_train_discriminator(self, d_epochs=1, d_pre_path=None, lr=1e-3):
         print("Pre-training discriminator")
         if d_pre_path is None:
-            self.d_pre_path = Path(self.models_base_path / "discriminator_pre.hdf5")
+            self.d_pre_path = self.models_base_path / "discriminator_pre.hdf5"
         else:
             self.d_pre_path = d_pre_path
 
@@ -180,16 +175,16 @@ class Trainer(object):
 
                     action = self.agent.act(state, epsilon=0.0)
 
-                    _next_state, reward, is_episode_end, _info = self.env.step(action)
+                    _, reward, is_episode_end, _ = self.env.step(action)
                     self.agent.generator.update(state, action, reward)
-                    rewards[:, t] = reward.reshape(
-                        [
-                            self.B,
-                        ]
-                    )
+                    rewards[:, t] = reward.reshape([self.B])
                     if is_episode_end:
                         if verbose:
-                            print("Reward: {:.3f}, Episode end".format(np.average(rewards)))
+                            print(
+                                "Reward: {:.3f}, Episode end".format(
+                                    np.average(rewards)
+                                )
+                            )
                             self.env.render(head=head)
                         break
 
@@ -198,15 +193,17 @@ class Trainer(object):
                 print("D-step")
                 self.agent.generator.generate_samples(self.T, self.g_data, self.generate_samples, self.path_neg)
                 self.d_data = DiscriminatorGenerator(
-                    path_pos=self.path_pos, order=self.order, path_neg=self.path_neg, B=self.B, shuffle=True
+                    path_pos=self.path_pos, order=self.order, path_neg=self.path_neg, B=self.B, shuffle=True,
                 )
-                self.discriminator.fit_generator(self.d_data, steps_per_epoch=None, epochs=d_epochs)
+                self.discriminator.fit_generator(
+                    self.d_data, steps_per_epoch=None, epochs=d_epochs
+                )
 
             # Update env.g_beta to agent
-            self.agent.save(g_weights_path)
-            self.g_beta.load(g_weights_path)
+            self.agent.save(g_weights_path) # TODO
+            self.g_beta.load(g_weights_path) # TODO
 
-            self.discriminator.save(d_weights_path)
+            self.discriminator.save(d_weights_path) # TODO
             self.eps = max(self.eps * (1 - float(step) / steps * 4), 1e-4)
 
     def save(self, g_path, d_path):
@@ -218,14 +215,10 @@ class Trainer(object):
         self.g_beta.load(g_path)
         self.discriminator.load_weights(d_path)
 
-    def generate_rules(self, file_name, generate_samples):
-        path_rules = Path(self.models_base_path / file_name)
-        print(path_rules)
-
+    def generate_rules(self, path_rules, generate_samples):
         self.agent.generator.generate_rules(8, self.g_data, generate_samples, path_rules)
 
-    def train_rules(self, rule_len, path):
-        path_rules = Path(self.models_base_path / path)
+    def train_rules(self, rule_len, path_rules):
         self.agent.generator.train_rules(rule_len, path_rules)
 
     def filter(self, path):

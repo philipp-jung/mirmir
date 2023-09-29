@@ -51,25 +51,17 @@ def get_data_cleaning_evaluation(df_clean, df_dirty, df_corrected):
     return [ed_p, ed_r, ed_f, ec_p, ec_r, ec_f]
 
 
-def get_table_as_df(table_name, conn):
-    df = (pd.read_sql_query(f'SELECT * FROM {table_name}', conn)
-                .drop(columns="Label")
-                .astype(str))
-    return df
-
-
-def evaluate(table_name_clean, table_name_corrected, table_name_dirty):
+def evaluate(path_ori, path, path_dirty):
     conn = sqlite3.connect('database.db')
-    df_clean = get_table_as_df(table_name_clean, conn)
-    df_dirty = get_table_as_df(table_name_dirty, conn)
-    df_corrected = get_table_as_df(table_name_corrected, conn)
-    conn.close()
+    df_clean = pd.read_sql_query(f"SELECT * FROM '{path_ori}'", conn)
+    df_dirty = pd.read_sql_query(f"SELECT * FROM '{path_dirty}'", conn)
+    df_corrected = pd.read_sql_query(f"SELECT * FROM '{path}'", conn)
 
     ed_p, ed_r, ed_f, ec_p, ec_r, ec_f = get_data_cleaning_evaluation(df_clean, df_dirty, df_corrected)
 
-    with open(f'output/{table_name_clean}_result.txt', 'wt') as f:
+    with open(f'output/{path_ori}_result.txt', 'wt') as f:
         f.write(json.dumps({
-                'dataset': table_name_clean,
+                'dataset': path_ori,
                 'ed_p': ed_p,
                 'ed_r': ed_r,
                 'ed_f': ed_f,
@@ -78,7 +70,7 @@ def evaluate(table_name_clean, table_name_corrected, table_name_dirty):
                 'ec_f': ec_f,
             })
         )
-    print("Cleaning performance on {}:\nPrecision = {:.2f}\nRecall = {:.2f}\nF1 = {:.2f}".format(table_name_clean, ec_p, ec_r, ec_f))
+    print("Cleaning performance on {}:\nPrecision = {:.2f}\nRecall = {:.2f}\nF1 = {:.2f}".format(path_ori, ec_p, ec_r, ec_f))
 
 
 
@@ -86,17 +78,17 @@ if __name__ == '__main__':
 
     flag = 2
     if flag == 1:
-        table_name_clean = "Test"  # Hosp_rules
-        table_name_corrected = "Test_copy"  #
+        path_ori = "Test"  # Hosp_rules
+        path = "Test_copy"  #
     if flag == 2:
-        table_name_clean = "Hosp_rules"  #
-        table_name_corrected = "Hosp_rules_copy"
+        path_ori = "Hosp_rules"  #
+        path = "Hosp_rules_copy"
     if flag == 3:
-        table_name_clean = "UIS"  #
-        table_name_corrected = "UIS_copy"
+        path_ori = "UIS"  #
+        path = "UIS_copy"
 
     if flag == 4:
-        table_name_clean = "Food"  #
-        table_name_corrected = "Food_copy"
+        path_ori = "Food"  #
+        path = "Food_copy"
 
-    evaluate(table_name_clean,table_name_corrected)
+    evaluate(path_ori,path)

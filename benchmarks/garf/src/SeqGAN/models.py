@@ -1,21 +1,22 @@
-import linecache
-import math
 import pickle
+import linecache
 import sqlite3
+import math
 from pathlib import Path
 
-import keras.backend as K
 import numpy as np
-import tensorflow as tf
-from keras.layers import LSTM, Dense, Dropout, Embedding, Input, Lambda
-from keras.layers.wrappers import TimeDistributed
+import keras.backend as K
 from keras.models import Model
+from keras.layers import Input, Lambda, Dropout, Dense, Embedding, LSTM
+from keras.layers.wrappers import TimeDistributed
 from keras.utils import to_categorical
+import tensorflow as tf
 from tqdm import tqdm
 
 
 def GeneratorPretraining(V, E, H):
-    """Model for Generator pretraining. This model's weights should be shared with
+    """
+    Model for Generator pretraining. This model's weights should be shared with
         Generator.
     # Arguments:
         V: int, Vocabrary size
@@ -24,7 +25,7 @@ def GeneratorPretraining(V, E, H):
     # Returns:
         generator_pretraining: keras Model
             input: word ids, shape = (B, T)
-            output: word probability, shape = (B, T, V).
+            output: word probability, shape = (B, T, V)
     """
     # in comment, B means batch size, T means lengths of time steps.
     input = Input(shape=(None,), dtype="int32", name="Input")  # (B, T)
@@ -48,13 +49,15 @@ class Generator:
     "Create Generator, which generate a next word."
 
     def __init__(self, sess, B, V, E, H, models_base_path, lr=1e-3):
-        """# Arguments:
+        """
+        # Arguments:
             B: int, Batch size
             V: int, Vocabrary size
             E: int, Embedding size
             H: int, LSTM hidden size
+            models_base_path: base path to store the model's rules files to
         # Optional Arguments:
-            lr: float, learning rate, default is 0.001.
+            lr: float, learning rate, default is 0.001
         """
         self.sess = sess
         self.B = B
@@ -77,9 +80,7 @@ class Generator:
 
         self.layers = []
 
-        embedding = Embedding(
-            self.V, self.E, mask_zero=True, name="Embedding"
-        )  # The first layer is the Embedding layer
+        embedding = Embedding(self.V, self.E, mask_zero=True, name="Embedding")  # The first layer is the Embedding layer
         out = embedding(state_in)  # Input is (B,V), output (B,1,E)
         self.layers.append(embedding)
 
@@ -91,7 +92,7 @@ class Generator:
         prob = dense(out)  # Input is (B,H), output is (B,V)
         self.layers.append(dense)
 
-        log_prob = tf.math.log(tf.reduce_mean(input_tensor=prob * action, axis=-1))
+        log_prob = tf.math.log(tf.reduce_mean(input_tensor=prob * action, axis=-1))  # (B, )         Take each row of data and multiply it with onehot's action, then take the logarithm of the average
         loss = -log_prob * reward
         optimizer = tf.compat.v1.train.AdamOptimizer(learning_rate=self.lr)
         minimize = optimizer.minimize(loss)
@@ -122,7 +123,8 @@ class Generator:
         return self.h, self.c
 
     def predict(self, state, stateful=True):
-        """Predict next action(word) probability
+        """
+        Predict next action(word) probability
         # Arguments:
             state: np.array, previous word ids, shape = (B, 1)
         # Optional Arguments:
@@ -131,7 +133,7 @@ class Generator:
                     and return prob.
                 else, return prob, next_h, next_c without updating states.
         # Returns:
-            prob: np.array, shape=(B, V).
+            prob: np.array, shape=(B, V)
         """
         feed_dict = {self.state_in: state, self.h_in: self.h, self.c_in: self.c}
         prob, next_h, next_c = self.sess.run(  # prob：np.array，shape=（B,V）ex.（32,1398）
@@ -176,15 +178,15 @@ class Generator:
             action[i] = np.random.choice(
                 self.V, p=p
             )  # Probabilistically choose a number between 0 and V according to the probability provided by p
-
         return action
 
     def sampling_sentence(self, T, BOS=1):  # Generate sentences based on rnn
         self.reset_rnn_state()  # Parameters h,c state reset
-        action = np.zeros([self.B, 1], dtype=np.int32)  # Generate a vertical array of size B, initially all 0
+        action = np.zeros(
+            [self.B, 1], dtype=np.int32
+        )  # Generate a vertical array of size B, initially all 0
         action[:, 0] = BOS  # First full placement BOS
         actions = action
-        # print(T)
         for _ in range(T):  # T is the maximum length of a sentence
             prob = self.predict(
                 action
@@ -202,6 +204,7 @@ class Generator:
         actions = actions[
             :, 1:
         ]  # Take all the data from the first column to the right side of the data, i.e. all the data on the right side except column 0
+        # print(actions)
         self.reset_rnn_state()
 
         return actions
@@ -218,26 +221,24 @@ class Generator:
             actions_list = actions.tolist()  # Change from array to list
 
             for sentence_id in actions_list:
-                # print("sentence_id",sentence_id)
                 sentence = [
-                    g_data.id2word[action] for action in sentence_id if action != 0 and action != 2
+                    g_data.id2word[action]
+                    for action in sentence_id
+                    if action != 0 and action != 2
                 ]  # Reverse the id to word, this is a concise version of the above
                 sentences.append(sentence)  # Generators generate sentences
-                # print(sentences)
 
         output_str = ""
 
         for i in range(num):
             output_str += " ".join(sentences[i]) + "\n"
-
         with open(output_file, "w", encoding="utf-8") as f:
             f.write(output_str)
-
         print("The generated sequence is written to", output_file)
 
     def sampling_rule(self, T, BOS=1):  # Generate rules based on rnn
-        with open(Path(self.models_base_path / "id2word.txt"), "r") as file:
-            id2word = eval(file.read())
+        with open(self.models_base_path / "id2word.txt", "r") as f:
+            id2word = eval(f.read())
 
         self.reset_rnn_state()
         action = np.zeros([self.B, 1], dtype=np.int32)  # into a vertical array of size B, initially all 0
@@ -252,10 +253,10 @@ class Generator:
             action = self.sampling_word(prob).reshape(
                 -1, 1
             )  # Sample words according to parameters and convert to 1 column
-            np.argmax(prob, axis=-1).reshape([-1, 1])
 
             show2 = []
             for id in action:
+                # print(id)
                 word = id2word[id[0]]
                 show2.append(word)
 
@@ -263,17 +264,14 @@ class Generator:
             actions = np.concatenate([actions, show3], axis=-1)  # Rule Growth
 
         self.reset_rnn_state()  # Reset the state of lstm, it is important to delete the equivalent of the above words to continue to predict, rather than based on the current state prediction
-
         return actions
 
     def generate_rules(self, T, g_data, num, output_file):
-        print("Generate_rules was executed")
-        # print(output_file)
         rules = []
         for _ in range(num // self.B + 1):
             actions = self.sampling_rule(T)  # Generate sentences based on neural networks
             print(actions)
-            actions_list = actions.tolist()  # change from array to list, dimension remains the same, ex.(32,7)
+            actions_list = (actions.tolist())  # change from array to list, dimension remains the same, ex.(32,7)
 
             for rule_word in actions_list:  # Cycle B times
                 rule = rule_word
@@ -282,11 +280,9 @@ class Generator:
         output_str = ""
 
         for i in range(num):
-            # print(rules[i])
             for n in range(len(rules[i])):
-                if rules[i][n] is None:
+                if rules[i][n] == None:
                     rules[i][n] = "<UNK>"
-            # print(rules[i])
             output_str += ",".join(rules[i]) + "\n"
 
         with open(output_file, "w", encoding="utf-8") as f:
@@ -296,13 +292,10 @@ class Generator:
         print("Written", output_file)
 
     def multipredict_rules_argmax(self, reason):  # Rules for generating many-to-one orders
-        print("Executed multipredict_rules")
-
-        with open(Path(self.models_base_path / "id2word.txt"), "r") as file:
-            id2word = eval(file.read())
-
-        with open(Path(self.models_base_path / "word2id.txt"), "r") as file:
-            word2id = eval(file.read())
+        with open(self.models_base_path / "id2word.txt", "r") as f:
+            id2word = eval(f.read())
+        with open(self.models_base_path / "word2id.txt", "r") as f:
+            word2id = eval(f.read())
 
         self.reset_rnn_state()
         action = np.zeros([self.B, 1], dtype=np.int32)
@@ -313,17 +306,13 @@ class Generator:
             prob = self.predict(action)
             result = np.argmax(prob, axis=-1).reshape([-1, 1])
             result = id2word[result[0][0]]
-
         return result
 
     def multipredict_rules_probability(self, reason):  # Rules for generating many-to-one orders
-        print("Executed multipredict_rules")
-
-        with open(Path(self.models_base_path / "id2word.txt"), "r") as file:
-            id2word = eval(file.read())
-
-        with open(Path(self.models_base_path / "word2id.txt"), "r") as file:
-            word2id = eval(file.read())
+        with open(self.models_base_path / "id2word.txt", "r") as f:
+            id2word = eval(f.read())
+        with open(self.models_base_path / "word2id.txt", "r") as f:
+            word2id = eval(f.read())
 
         self.reset_rnn_state()
         action = np.zeros([self.B, 1], dtype=np.int32)
@@ -332,7 +321,6 @@ class Generator:
             word = reason[i]
             try:
                 action[0][0] = word2id[word]
-
             except:
                 action[0][0] = "3"
 
@@ -341,27 +329,27 @@ class Generator:
             result = id2word[result[0][0]]
             result_ = np.random.choice(self.V, p=prob[0])
             result_ = id2word[result_]
-
+            
         return result_
 
     def train_rules(self, rule_len, path):
         print("Executed train_rules")
         print("Sequence sample size is", rule_len)
 
-        with open(Path(self.models_base_path / "id2word.txt"), "r") as file:
-            id2word = eval(file.read())
-
-        with open(Path(self.models_base_path / "word2id.txt"), "r") as file:
-            word2id = eval(file.read())
+        with open(self.models_base_path / "id2word.txt", "r") as f:
+            id2word = eval(f.read())
+        with open(self.models_base_path / "word2id.txt", "r") as f:
+            word2id = eval(f.read())
 
         rules_final = {}
 
         for idx in tqdm(range(rule_len)):
-            sentence = linecache.getline(str(path), idx)  # Read the idx row of the original data
+            sentence = linecache.getline(
+                str(path), idx
+            )  # Read the idx row of the original data
             words = sentence.strip().split(",")  # list type
-
-            with open(Path(self.models_base_path / "att_name.txt"), "r") as file:
-                label2att = eval(file.read())
+            with open(self.models_base_path / "att_name.txt", "r") as f:
+                label2att = eval(f.read())
 
             # LHS multi-attribute function dependency, here if you want to restore the filtering at the time of rule generation, check this module of the E drive backup
             reason = words  # words: ['31301', 'BENSON', 'AZ', '85602', 'COCHISE']
@@ -373,14 +361,10 @@ class Generator:
                 flag_ = flag  # Add an index of information response, starting from the last position of REASON and moving forward
 
                 while flag >= 0:
-                    # print("flag",flag)
                     dic_name = []
-                    left_ = []  # Used to store the reason part of the construction dictionary
-                    word_ = (
-                        []
-                    )  # is used to store the name of the constructed dictionary, which is actually the same as dic_name
+                    left_ = ([])  # Used to store the reason part of the construction dictionary
+                    word_ = ([])  # Used to store the name of the constructed dictionary, which is actually the same as dic_name
                     while flag_ != i:
-                        # print("i=",i,"flag=",flag,"flag_=",flag_)
                         word = reason[flag_]
                         left = label2att[flag_]  # New Information
                         try:
@@ -389,7 +373,6 @@ class Generator:
                             print("Not in the dictionary", word)
                             action[0][0] = "3"
 
-                        # print("Add information",action,"即",left,":",word)    # Add explainable time display
                         prob = self.predict(action)
                         dic_name.append(word)
                         left_.append(left)
@@ -397,7 +380,6 @@ class Generator:
                         flag_ = flag_ + 1
                     word = reason[flag_]  # word: 31301;word: BENSON;word: AZ;word: 85602;word: COCHISE，One at a time
                     dic_name.append(word)
-                    # print(word)
                     left = label2att[flag_]  # Get the attribute name of the corresponding position in the dictionary
                     right = label2att[i + 1]
 
@@ -421,10 +403,8 @@ class Generator:
                             addtwodimdict(rules_final[str(dic_name)], "reason", str(left_[n]), str(word_[n]))
 
                     if i == flag:
-                        # print("At this point i=flag")
                         addtwodimdict(rules_final, str(dic_name), "reason", {str(left): str(word)})
                         addtwodimdict(rules_final, str(dic_name), "result", {str(right): str(result)})
-
                     else:
                         addtwodimdict(rules_final[str(dic_name)], "reason", str(left), str(word))
                         addtwodimdict(rules_final[str(dic_name)], "result", str(right), str(result))
@@ -434,22 +414,27 @@ class Generator:
                         # If it comes out, jump out of the loop, otherwise the flag is moved forward by one bit and additional information is added to continue the test
                         break
                     else:
-                        # print("The predicted value does not match the actual value, increase the reason part")    # Add explainable time display
                         del rules_final[str(dic_name)]
 
                     flag = flag - 1
                     flag_ = flag
 
-            with open(Path(self.models_base_path / "rules_final.txt"), "w") as file:
-                file.write(str(rules_final))
+            with open(self.models_base_path / "rules_final.txt", "w") as f:
+                f.write(str(rules_final))
+
+            with open(self.models_base_path / "rules_read.txt", "w") as f:
+                for item in rules_final.items():
+                    f.write(str(item))
+                    f.write("\r\n")
+                f.write(str(rules_final))
 
         print("The rule generation is complete and the number of", len(rules_final))
 
     def filter(self, path):
         print("The filter is executed")
 
-        with open(Path(self.models_base_path / "rules_final.txt"), "r") as file:
-            rules_final = eval(file.read())
+        with open(self.models_base_path / "rules_final.txt", "r") as f:
+            rules_final = eval(f.read())
 
         num = 0
         conn = sqlite3.connect("database.db")
@@ -472,7 +457,7 @@ class Generator:
                 i += 1
 
             sql1 = 'select "' + right + '" from "' + path + '" where "' + sqlex
-            cursor.execute(sql1)
+            cursor.execute(sql1)  # "City","State" ,where rownum<=10
             rows = cursor.fetchall()
             num1 = len(rows)
             if num1 < 3:
@@ -481,9 +466,7 @@ class Generator:
             else:
                 t_rule = 1
                 for row in rows:
-                    if str(row[-1]) == str(
-                        result
-                    ):  # In this case, the rule matches the data, and the confidence of the rule increases
+                    if str(row[-1]) == str(result):  # In this case, the rule matches the data, and the confidence of the rule increases
                         t_rule = t_rule + 1
                         print("-->", t_rule, end="")
                     else:  # In this case, the rule is contrary to the data, and the confidence of the rule is reduced
@@ -494,13 +477,10 @@ class Generator:
         cursor.close()
         conn.close()
 
-        with open(Path(self.models_base_path / "rules_final.txt"), "w") as file:
-            file.write(str(rules_final))
-
+        with open(self.models_base_path / "rules_final.txt", "w") as f:
+            f.write(str(rules_final))
         l2 = len(rules_final)
-        print(
-            "Rule filtering is complete and the remaining number of",
-        )
+        print("Rule filtering is complete and the remaining number of",)
         print(str(l2))
 
     def detect(self, rows, result, rulename, LHS, RHS, att2label, label2att):
@@ -517,11 +497,10 @@ class Generator:
             else:
                 dert += 1
                 flag = 0  # Mark the rule as conflicting with the data
-        if flag == 1:  # If the rule does not conflict with the data, a great confidence level is given directly
+        if (flag == 1):  # If the rule does not conflict with the data, a great confidence level is given directly
             t_rule = t_rule + 100
             flag_trust = 3  # 3 means the rule is correct and there is no conflict
             return flag_trust
-
         else:  # The rule conflicts with the data, then the confidence of each tuple is calculated to adjust t_rule
             print("The rule conflicts with the data")
             print("Estimated changes for this restoration", dert)
@@ -530,7 +509,7 @@ class Generator:
                 AV_p = []
                 t_tp = 999  # The confidence of the current tuple is calculated as the minimum value of the confidence of different AV_i in a tuple, and a large value is set first to avoid the interference of the initial value.
                 t_tc = t0
-
+                
                 for i in LHS:  # Calculate the minimum value of confidence in different AV_i in a tuple
                     AV_p.append(row[i])
                     t_AV_i = t0
@@ -557,22 +536,14 @@ class Generator:
                             flag_equal = 0  # Can the rule determine the token of row[i]
 
                             for k in range(len(left)):
-                                if (
-                                    row[att2label[left[k]]] == word[k]
-                                ):  # If the tuple where row[i] is located satisfies all AV_p of a rule, mark it as 1
+                                if (row[att2label[left[k]]] == word[k]):  # If the tuple where row[i] is located satisfies all AV_p of a rule, mark it as 1
                                     flag_equal = 1
-
                                 else:
                                     flag_equal = 0
                                     break
-                            if (
-                                flag_equal == 1
-                            ):  # If the row[i] in the tuple can be determined by other rules, check whether it satisfies the rule
+                            if (flag_equal == 1):  # If the row[i] in the tuple can be determined by other rules, check whether it satisfies the rule
                                 result2 = v[0]
-
-                                if str(row[i]) == str(
-                                    result2
-                                ):  # Retrieve other rules to determine the confidence level of each token in the tuple, increase if it is satisfied, and decrease if it is not.
+                                if str(row[i]) == str(result2):  # Retrieve other rules to determine the confidence level of each token in the tuple, increase if it is satisfied, and decrease if it is not.
                                     t_AV_i = t_AV_i + t_r
                                 else:
                                     t_AV_i = t_AV_i - t_r
@@ -606,16 +577,12 @@ class Generator:
                     if attribute_c == right:
                         flag_equal = 0  # Can the rule determine the token of row[i]
                         for k in range(len(left)):
-                            if (
-                                row[att2label[left[k]]] == word[k]
-                            ):  # If the tuple in which AV_c is located satisfies all AV_p of a rule, mark it as 1
+                            if (row[att2label[left[k]]] == word[k]):  # If the tuple in which AV_c is located satisfies all AV_p of a rule, mark it as 1
                                 flag_equal = 1
                             else:
                                 flag_equal = 0
                                 break
-                        if (
-                            flag_equal == 1
-                        ):  # If the AV_c in the tuple can be determined by other rules, check whether it satisfies the rules
+                        if (flag_equal == 1):  # If the AV_c in the tuple can be determined by other rules, check whether it satisfies the rules
                             result2 = v[0]
                             if str(row[RHS]) == str(result2):
                                 t_tc = t_tc + t_r
@@ -640,9 +607,7 @@ class Generator:
                 else:
                     t_tuple = t_tp
 
-                if str(row[RHS]) == str(
-                    result
-                ):  # The tuple data is consistent with the rule, and the confidence level increases
+                if str(row[RHS]) == str(result):  # The tuple data is consistent with the rule, and the confidence level increases
                     if t_tuple > 0:
                         t_rule = t_rule + math.ceil(math.log(1 + t_tuple))
                     else:
@@ -673,22 +638,17 @@ class Generator:
             flag_trust = 1  # At this point the rule is considered correct and the data is modified
         elif t_rule < t_max:
             flag_trust = 0
-            # print("The final rule confidence level is", t_rule, "The tuple with which it conflicts has the highest confidence level of", t_max)
             return flag_trust  # At this point the data is considered correct and the rule is modified
-        self.rule[str(rulename)].update(
-            {"confidence": t_rule}
-        )  # Rule confidence initialization can be considered to be taken out separately
-        print()
+        self.rule[str(rulename)].update({"confidence": t_rule})  # Rule confidence initialization can be considered to be taken out separately
         return flag_trust
 
     def repair(self, iteration_num, path, order):
         print("Performed a REPAIR")
 
-        with open(Path(self.models_base_path / "att_name.txt"), "r") as file:
-            label2att = eval(file.read())
-
-        with open(Path(self.models_base_path / "rules_final.txt"), "r") as file:
-            self.rule = eval(file.read())
+        with open(self.models_base_path / "att_name.txt", "r") as f:
+            label2att = eval(f.read())
+        with open(self.models_base_path / "rules_final.txt", "r") as f:
+            self.rule = eval(f.read())
 
         att2label = {v: k for k, v in label2att.items()}  # Dictionary Reverse Transfer
 
@@ -721,9 +681,7 @@ class Generator:
 
             flag_trust = self.detect(rows, result, rulename, LHS, RHS, att2label, label2att)
 
-            if (
-                flag_trust == 3
-            ):  # 3 means the rule is correct, and there is no conflict, proceed directly to the next rule
+            if flag_trust == 3:  # 3 means the rule is correct, and there is no conflict, proceed directly to the next rule
                 continue
 
             if flag_trust == 0:
@@ -758,7 +716,9 @@ class Generator:
                     min = flag  # The index corresponding to the leftmost part of the current REASON section
 
                 if min == 0:
-                    print("No fixes can be added to the left side of the rule, delete the rule")
+                    print(
+                        "No fixes can be added to the left side of the rule, delete the rule"
+                    )
                     del self.rule[str(rulename)]
                     break
                 left_new = label2att[min - 1]
@@ -776,20 +736,19 @@ class Generator:
                     + result
                     + "'"
                 )
-                print("sqladd:", sqladd)
                 cursor.execute(sqladd)
                 rows_left = cursor.fetchall()
 
                 # Reconstructing the dictionary
                 if rows_left == []:
-                    # print("There is no condition modified on the left side of the rule, delete the rule")
                     del self.rule[str(rulename)]
                     break
                 addtwodimdict(self.rule[str(rulename)], "reason", str(left_new), str(rows_left[0][0]))
+
                 for n in range(len(word)):
                     del self.rule[str(rulename)]["reason"][left[n]]
                     addtwodimdict(self.rule[str(rulename)], "reason", str(left[n]), str(word[n]))
-
+                
                 left = list(ruleinfo["reason"].keys())
                 word = list(ruleinfo["reason"].values())
 
@@ -798,15 +757,14 @@ class Generator:
                 while i < len(left):
                     sqlex = sqlex + ' and "' + left[i] + "\"='" + word[i] + "'"
                     i += 1
-                sql1 = 'SELECT * FROM "' + path + '" where "' + sqlex
-                cursor.execute(sql1)  # "City","State" ,where rownum<=10
+                sql1 = 'select * from "' + path + '" where "' + sqlex
+                cursor.execute(sql1)
                 rows = cursor.fetchall()
 
                 if len(rows) < 3:
                     continue
 
                 result = self.multipredict_rules_argmax(word)
-                # print(result)
                 flag_trust = self.detect(rows, result, rulename, LHS, RHS, att2label, label2att)
                 if flag_trust == 1:
                     print("Rule repair successful")
@@ -827,18 +785,14 @@ class Generator:
                         t_tp = 999  # The confidence of the current tuple is calculated as the minimum value of the confidence of different AV_i in a tuple, and a large value is set first to avoid the interference of the initial value.
                         t_tc = t0
                         flag_p = 0  # Used to record the position of the attribute corresponding to the lowest confidence level in AV_p
-                        rule_p_name = (
-                            []
-                        )  # Record the rule with the highest confidence that can repair the attribute with the lowest confidence in the above AV_p
-                        print("The tuples that match the current rule are: ", row)
+                        rule_p_name = []  # Record the rule with the highest confidence that can repair the attribute with the lowest confidence in the above AV_p
+                        print("The tuples that match the current rule are：", row)
                         for i in LHS:  # Calculate the minimum value of confidence in different AV_i in a tuple
                             AV_p.append(row[i])
                             t_AV_i = t0
                             attribute_p = label2att[i]
                             rulename_p_max = []
-                            t_rmax = (
-                                -999
-                            )  # The maximum confidence level of the rules that correct AV_i in the following iterative dictionary, initially set to a minimal value
+                            t_rmax = -999  # The maximum confidence level of the rules that correct AV_i in the following iterative dictionary, initially set to a minimal value
                             for rulename_p, ruleinfo_p in list(self.rule.items()):  # Traversing the dictionary
                                 if rulename == rulename_p:
                                     continue
@@ -854,6 +808,7 @@ class Generator:
                                 right = k[0]
                                 if attribute_p == right:
                                     flag_equal = 0  # Can the rule determine the token of row[i]
+
                                     for k in range(len(left)):
                                         if (
                                             row[att2label[left[k]]] == word[k]
@@ -889,9 +844,7 @@ class Generator:
                                 flag_p = i  # Record the index of AV_i with the lowest confidence
                                 rule_p_name = rulename_p_max  # Record the name of the rule that corrects this AV_i with the highest confidence
 
-                        for rulename_c, ruleinfo_c in list(
-                            self.rule.items()
-                        ):  # Iterate through the dictionary, calculate t_c
+                        for rulename_c, ruleinfo_c in list(self.rule.items()):  # Iterate through the dictionary, calculate t_c
                             if rulename == rulename_c:
                                 continue
                             v = list(ruleinfo_c["result"].values())
@@ -905,6 +858,7 @@ class Generator:
                             attribute_c = label2att[RHS]
                             if attribute_c == right:
                                 flag_equal = 0  # Can the rule determine the token of row[i]
+
                                 for k in range(len(left)):
                                     if (
                                         row[att2label[left[k]]] == word[k]
@@ -932,9 +886,7 @@ class Generator:
                                             t_r,
                                         )
 
-                        if (
-                            t_tp == 999
-                        ):  # means that all cells in it cannot be determined by other rules, reset its value to t0
+                        if t_tp == 999:  # means that all cells in it cannot be determined by other rules, reset its value to t0
                             t_tp = t0
                         if t_tc < t_tp or t_tc == t_tp:
                             print(
@@ -988,9 +940,18 @@ class Generator:
                             )
                             for x in range(len(row) - 1):  # t2
                                 if x == 0:
-                                    sql_info = '"' + label2att[x] + "\"='" + row[x] + "'"
+                                    sql_info = (
+                                        '"' + label2att[x] + "\"='" + row[x] + "'"
+                                    )
                                 else:
-                                    sql_info = sql_info + ' and "' + label2att[x] + "\"='" + row[x] + "'"
+                                    sql_info = (
+                                        sql_info
+                                        + ' and "'
+                                        + label2att[x]
+                                        + "\"='"
+                                        + row[x]
+                                        + "'"
+                                    )
                             sql_update = (
                                 'update "'
                                 + path
@@ -1015,28 +976,27 @@ class Generator:
         print("Save repair rules")
         print("Rule dictionary size", len(self.rule))
 
-        with open(Path(self.models_base_path / "rules_final.txt"), "w") as file:
-            file.write(str(self.rule))
+        with open(self.models_base_path / "rules_final.txt", "w") as f:
+            f.write(str(self.rule))
 
     def save(self, path):
         weights = []
         for layer in self.layers:
             w = layer.get_weights()
             weights.append(w)
-
         with open(path, "wb") as f:
             pickle.dump(weights, f)
 
     def load(self, path):
         with open(path, "rb") as f:
             weights = pickle.load(f)
-
         for layer, w in zip(self.layers, weights):
             layer.set_weights(w)
 
 
 def Discriminator(V, E, H=64, dropout=0.1):
-    """Disciriminator model.
+    """
+    Disciriminator model.
     # Arguments:
         V: int, Vocabrary size
         E: int, Embedding size
@@ -1045,7 +1005,7 @@ def Discriminator(V, E, H=64, dropout=0.1):
     # Returns:
         discriminator: keras model
             input: word ids, shape = (B, T)
-            output: probability of true data or not, shape = (B, 1).
+            output: probability of true data or not, shape = (B, 1)
     """
     input = Input(shape=(None,), dtype="int32", name="Input")  # (B, T)
     out = Embedding(V, E, mask_zero=True, name="Embedding")(input)  # (B, T, E)
@@ -1059,7 +1019,8 @@ def Discriminator(V, E, H=64, dropout=0.1):
 
 
 def Highway(x, num_layers=1, activation="relu", name_prefix=""):
-    """Layer wrapper function for Highway network
+    """
+    Layer wrapper function for Highway network
     # Arguments:
         x: tensor, shape = (B, input_size)
     # Optional Arguments:
@@ -1067,7 +1028,7 @@ def Highway(x, num_layers=1, activation="relu", name_prefix=""):
         activation: keras activation, default is 'relu'
         name_prefix: str, default is '', layer name prefix
     # Returns:
-        out: tensor, shape = (B, input_size).
+        out: tensor, shape = (B, input_size)
     """
     input_size = K.int_shape(x)[1]
     for i in range(num_layers):
@@ -1077,7 +1038,9 @@ def Highway(x, num_layers=1, activation="relu", name_prefix=""):
 
         gate_ratio = Dense(input_size, activation="sigmoid", name=gate_ratio_name)(x)
         fc = Dense(input_size, activation=activation, name=fc_name)(x)
-        x = Lambda(lambda args: args[0] * args[2] + args[1] * (1 - args[2]), name=gate_name)([fc, x, gate_ratio])
+        x = Lambda(
+            lambda args: args[0] * args[2] + args[1] * (1 - args[2]), name=gate_name
+        )([fc, x, gate_ratio])
     return x
 
 
