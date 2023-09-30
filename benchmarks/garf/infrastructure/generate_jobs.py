@@ -12,52 +12,60 @@ def generate_jobs(jobs_path: Path) -> int:
     datasets = []
 
     for d in ['rayyan', 'beers', 'hospital', 'flights']:
-        for _ in range(3):
-            datasets.append(d)
+        for r in range(3):
+            datasets.append({
+                'job_name': f'{d}-{r}',
+                'dataset': d
+                })
 
     for d in [137, 184, 1481, 41027]:
         for d_type in ['simple_mcar', 'imputer_simple_mcar']:
             for pct in [1, 5, 10]:
-                for _ in range(3):
-                    datasets.append(f'{d}_{d_type}_{pct}')
+                for r in range(3):
+                    datasets.append({
+                        'job_name': f'{d}-{d_type}-{pct}-{r}',
+                        'dataset': f'{d}_{d_type}_{pct}',
+                        })
 
     for d in ['cars', 'bridges', 'restaurant', 'glass']:
         for pct in range(1, 6):
             for v in range(1, 4):
-                datasets.append(f'{d}_{pct}_{v}')
+                datasets.append({
+                    'job_name': f'{d}-{pct}-{v}',
+                    'dataset': f'{d}_{pct}_{v}',
+                    })
 
     template = """apiVersion: batch/v1
-    kind: Job
+kind: Job 
+metadata:
+  name: garf-baseline-{}
+spec:
+  completions: 1
+  template:
     metadata:
-      name: garf-baseline-{}
+      labels:
+        app: garf-baseline-experiment-{}
     spec:
-      completions: 1
-      template:
-        metadata:
-          labels:
-            app: garf-baseline-experiment-{}
-        spec:
-          nodeSelector:
-            cpuclass: epyc
-          restartPolicy: Never
-          containers:
-            - name: garf-experiment
-              image: docker.io/larmor27/garf-experiment:latest
-              env:
-                - name: DATASET
-                  value: {}
-              volumeMounts:
-                - name: data-volume
-                  mountPath: /app/output  # Mounting the PVC at /app/output directory in the container
-          volumes:
+      nodeSelector:
+        cpuclass: epyc
+      restartPolicy: Never
+      containers:
+        - name: garf-experiment
+          image: docker.io/larmor27/garf-experiment:latest
+          env:
+            - name: DATASET
+              value: {}
+          volumeMounts:
             - name: data-volume
-              persistentVolumeClaim:
-                claimName: garf-results
+              mountPath: /app/output  # Mounting the PVC at /app/output directory in the container
+      volumes:
+        - name: data-volume
+          persistentVolumeClaim:
+            claimName: garf-results
     """
 
     for i, d in enumerate(datasets):
-        converted = d.replace('_', '-')
-        job_config = template.format(converted, converted, d)
+        job_config = template.format(d['job_name'], d['job_name'], d['dataset'])
         with open(jobs_path / f'config_{i}.yaml', 'wt') as f:
             f.write(job_config)
 

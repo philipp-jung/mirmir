@@ -1,3 +1,4 @@
+import time
 import json
 import sqlite3
 import pandas as pd
@@ -59,7 +60,8 @@ def evaluate(path_ori, path, path_dirty):
 
     ed_p, ed_r, ed_f, ec_p, ec_r, ec_f = get_data_cleaning_evaluation(df_clean, df_dirty, df_corrected)
 
-    with open(f'output/{path_ori}_result.txt', 'wt') as f:
+    timestamp = str(int(time.time()))
+    with open(f'output/{path_ori}_{timestamp}.txt', 'wt') as f:
         f.write(json.dumps({
                 'dataset': path_ori,
                 'ed_p': ed_p,

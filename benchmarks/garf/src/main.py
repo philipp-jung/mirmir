@@ -1,6 +1,7 @@
 import json
 import traceback
 from pathlib import Path
+import time
 
 from SeqGAN.train import Trainer
 from eva import evaluate
@@ -111,7 +112,8 @@ except Exception as e:
     json_data = json.dumps(exception_data, indent=4)
 
     # Write the JSON string to a text file
-    with open(f'output/{path_ori}_result.txt', 'wt') as file:
+    timestamp = str(int(time.time()))
+    with open(f'output/{path_ori}_{timestamp}.txt', 'wt') as file:
         file.write(json_data)
     print('Did not clean data successfully:')
     print(f'{exception_type}: {exception_message}')
