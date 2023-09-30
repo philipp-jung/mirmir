@@ -3,7 +3,7 @@ import sqlite3
 
 
 def create_tables_for_dataset(name: str, path: str, path_dirty: str, n_rows=None):
-    connection = sqlite3.connect('to_garf.db')
+    connection = sqlite3.connect('src/database.db')
     df_clean = pd.read_csv(path, dtype=str).fillna('__missing__')
     if n_rows is not None:
         df_clean = df_clean.iloc[:n_rows, :]

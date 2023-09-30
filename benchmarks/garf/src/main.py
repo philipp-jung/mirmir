@@ -9,22 +9,22 @@ from rule_sample import rule_sample
 import config
 
 
+# To use the setup with Kubernetes, read the datasets name from an environment variable.
 # dataset = os.environ.get('Dataset')
-dataset = '6_simple_mcar_1'
+
+# Otherwise, you can set the dataset name manually here.
+dataset = '1461_simple_mcar_1'
 
 path = f"{dataset}_copy"
 path_ori = dataset
 path_dirty = f"{dataset}_dirty"
 
 # Paths
-
 models_path = Path('models/')
 models_base_path = models_path / dataset
-
-models_base_path.mkdir(parents=True, exist_ok=True)
-
 path_rules = models_base_path / "rules.txt"
 
+models_base_path.mkdir(parents=True, exist_ok=True)
 
 order = config.order  # Order, 1 for positive order, 0 for negative order
 
@@ -48,7 +48,7 @@ try:
                             d_lr=config.d_lr,
                             n_sample=config.n_sample,
                             models_base_path=models_base_path)
-            
+
             trainer.pre_train(g_epochs=config.g_pre_epochs,
                             d_epochs=config.d_pre_epochs,
                             g_pre_path=config.g_pre_weights_path,
@@ -88,12 +88,8 @@ try:
 
             rule_len = rule_sample(path_rules, path, order)
             trainer.train_rules(rule_len, path_rules)  # For production rules, generate rules_final.txt from rules.txt
-
             trainer.filter(path)
 
-            f = open('data/save/log.txt', 'w')
-            f.write("")
-            f.close()
             att_reverse(path, 1, models_base_path)
             trainer.repair(path)
     evaluate(path_ori, path, path_dirty)
