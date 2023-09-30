@@ -50,6 +50,7 @@ def main():
                 path = f"../../datasets/openml/{dataset_name}/clean.csv"
                 path_dirty = f"../../datasets/openml/{dataset_name}/{error_class}_{error_fraction}.csv"
                 create_tables_for_dataset(agg_name, path, path_dirty, 1000)
+    print(f'Wrote tables to src/database.db.')
 
 
 if __name__ == '__main__':
