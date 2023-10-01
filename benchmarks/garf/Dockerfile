@@ -1,11 +1,11 @@
 # Use the official Python 3.7 image as the base image
 FROM python:3.7
 
-# Set the working directory inside the container
-WORKDIR /src
-
 # Copy the requirements.txt and main.py files into the container's working directory
 COPY src/ /src/
+
+# Set the working directory inside the container
+WORKDIR /src
 
 # Install the Python dependencies specified in requirements.txt
 RUN pip install --upgrade pip setuptools

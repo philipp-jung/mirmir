@@ -12,7 +12,7 @@ import config
 
 
 # To use the setup with Kubernetes, read the datasets name from an environment variable.
-dataset = os.environ.get('DATASET')
+dataset = os.environ.get('DATASET', 'DATASET_not_set')
 
 # Otherwise, you can set the dataset name manually here.
 # dataset = '1481_simple_mcar_1'
@@ -21,12 +21,19 @@ path = f"{dataset}_copy"
 path_ori = dataset
 path_dirty = f"{dataset}_dirty"
 
+
 # Paths
 models_path = Path('models/')
 models_base_path = models_path / dataset
 path_rules = models_base_path / "rules.txt"
 
 models_base_path.mkdir(parents=True, exist_ok=True)
+g_pre_weights_path = models_base_path / 'generator_pre.hdf5'
+d_pre_weights_path = models_base_path / 'discriminator_pre.hdf5'
+g_weights_path = models_base_path / 'generator.pkl'
+d_weights_path = models_base_path / 'discriminator.hdf5'
+path_neg = models_base_path / 'generated_sentences.txt'
+
 
 order = config.order  # Order, 1 for positive order, 0 for negative order
 
@@ -44,7 +51,7 @@ try:
                             config.d_dropout,
                             config.generate_samples,
                             path_pos=path,
-                            path_neg=config.path_neg,
+                            path_neg=path_neg,
                             path_rules=path_rules,
                             g_lr=config.g_lr,
                             d_lr=config.d_lr,
@@ -53,21 +60,21 @@ try:
 
             trainer.pre_train(g_epochs=config.g_pre_epochs,
                             d_epochs=config.d_pre_epochs,
-                            g_pre_path=config.g_pre_weights_path,
-                            d_pre_path=config.d_pre_weights_path,
+                            g_pre_path=g_pre_weights_path,
+                            d_pre_path=d_pre_weights_path,
                             g_lr=config.g_pre_lr,
                             d_lr=config.d_pre_lr)
 
-            trainer.load_pre_train(config.g_pre_weights_path, config.d_pre_weights_path)
+            trainer.load_pre_train(g_pre_weights_path, d_pre_weights_path)
             trainer.reflect_pre_train()  # Mapping layer weights to agent
 
             trainer.train(steps=1,
                         g_steps=1,
                         head=10,
-                        g_weights_path=config.g_weights_path,
-                        d_weights_path=config.d_weights_path)
+                        g_weights_path=g_weights_path,
+                        d_weights_path=d_weights_path)
 
-            trainer.save(config.g_weights_path, config.d_weights_path)
+            trainer.save(g_weights_path, d_weights_path)
 
         if config.flag == 1 or config.flag == 2:
             trainer = Trainer(order,
@@ -80,13 +87,13 @@ try:
                             config.d_dropout,
                             config.generate_samples,
                             path_pos=path,
-                            path_neg=config.path_neg,
+                            path_neg=path_neg,
                             g_lr=config.g_lr,
                             d_lr=config.d_lr,
                             n_sample=config.n_sample,
                             path_rules=path_rules,
                             models_base_path=models_base_path)
-            trainer.load(config.g_weights_path, config.d_weights_path)
+            trainer.load(g_weights_path, d_weights_path)
 
             rule_len = rule_sample(path_rules, path, order)
             trainer.train_rules(rule_len, path_rules)  # For production rules, generate rules_final.txt from rules.txt

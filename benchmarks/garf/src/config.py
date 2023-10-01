@@ -1,21 +1,3 @@
-mode = 'train'
-
-g_pre_weights_path = 'data/save/generator_pre.hdf5'
-d_pre_weights_path = 'data/save/discriminator_pre.hdf5'
-g_weights_path = 'data/save/generator.pkl'
-d_weights_path = 'data/save/discriminator.hdf5'
-
-# path_clean = hospital
-# path_dirty = hospital_dirty
-# path_pos = hospital_copy
-
-path_neg = 'data/save/generated_sentences.txt'
-
-path_rules = 'rules.txt'
-
-e = 'E'
-m = 'M'
-
 # 0 for training SeqGAN, 1 for repairing part, 2 for doing it simultaneously
 flag = 2
 # Number of model execution (in alternating orders)
