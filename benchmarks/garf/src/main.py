@@ -11,10 +11,10 @@ import config
 
 
 # To use the setup with Kubernetes, read the datasets name from an environment variable.
-# dataset = os.environ.get('Dataset')
+dataset = os.environ.get('Dataset')
 
 # Otherwise, you can set the dataset name manually here.
-dataset = '1481_simple_mcar_1'
+# dataset = '1481_simple_mcar_1'
 
 path = f"{dataset}_copy"
 path_ori = dataset
@@ -112,7 +112,7 @@ except Exception as e:
     json_data = json.dumps(exception_data, indent=4)
 
     # Write the JSON string to a text file
-    timestamp = str(int(time.time_ns()))
+    timestamp = str(time.time_ns())
     with open(f'output/{path_ori}_{timestamp}.txt', 'wt') as file:
         file.write(json_data)
     print('Did not clean data successfully:')

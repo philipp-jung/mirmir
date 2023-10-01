@@ -60,7 +60,7 @@ def evaluate(path_ori, path, path_dirty):
 
     ed_p, ed_r, ed_f, ec_p, ec_r, ec_f = get_data_cleaning_evaluation(df_clean, df_dirty, df_corrected)
 
-    timestamp = str(int(time.time_ns()))
+    timestamp = str(time.time_ns())
     with open(f'output/{path_ori}_{timestamp}.txt', 'wt') as f:
         f.write(json.dumps({
                 'dataset': path_ori,
