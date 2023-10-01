@@ -32,7 +32,8 @@ sqlite3 database.db
 ## 2) Run GARF on Kubernetes
 
 To run GARF on Kubernetes, install Docker on your machine.
-Then, run `docker build -t garf-experiment:latest .` in `benchmarks/garf/` to build the Docker image.
+Then, run `docker build -t <your_username>/garf-experiment:latest .` in `benchmarks/garf/` to build the Docker image.
+Then push it to the docker registry: `docker push <your_username>/garf-experiment:latest`
 
 Next, make sure that a persistent volume claim has been set up on kubernetes - you will find a sample configuration in `infrastructure/share_pvc.yaml` that you can use to create a PVC on your cluster. 10GB of disk should be plenty.
 

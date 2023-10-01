@@ -23,7 +23,7 @@ def generate_jobs(jobs_path: Path) -> int:
             for pct in [1, 5, 10]:
                 for r in range(3):
                     datasets.append({
-                        'job_name': f'{d}-{d_type}-{pct}-{r}',
+                        'job_name': f'{d}-{d_type.replace("_", "-")}-{pct}-{r}',
                         'dataset': f'{d}_{d_type}_{pct}',
                         })
 
@@ -57,7 +57,7 @@ spec:
               value: {}
           volumeMounts:
             - name: data-volume
-              mountPath: /app/output  # Mounting the PVC at /app/output directory in the container
+              mountPath: /src/output  # Mounting the PVC at /app/output directory in the container
       volumes:
         - name: data-volume
           persistentVolumeClaim:

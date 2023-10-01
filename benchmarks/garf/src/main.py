@@ -112,7 +112,7 @@ except Exception as e:
     json_data = json.dumps(exception_data, indent=4)
 
     # Write the JSON string to a text file
-    timestamp = str(int(time.time()))
+    timestamp = str(int(time.time_ns()))
     with open(f'output/{path_ori}_{timestamp}.txt', 'wt') as file:
         file.write(json_data)
     print('Did not clean data successfully:')
