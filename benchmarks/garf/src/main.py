@@ -12,7 +12,7 @@ import config
 
 
 # To use the setup with Kubernetes, read the datasets name from an environment variable.
-dataset = os.environ.get('Dataset')
+dataset = os.environ.get('DATASET')
 
 # Otherwise, you can set the dataset name manually here.
 # dataset = '1481_simple_mcar_1'
