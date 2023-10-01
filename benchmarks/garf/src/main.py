@@ -12,10 +12,10 @@ import config
 
 
 # To use the setup with Kubernetes, read the datasets name from an environment variable.
-# dataset = os.environ.get('DATASET', 'DATASET_not_set')
+dataset = os.environ.get('DATASET', 'DATASET_not_set')
 
 # Otherwise, you can set the dataset name manually here.
-dataset = 'bridges_1_1'
+# dataset = '184_simple_mcar_1'
 
 path = f"{dataset}_copy"
 path_ori = dataset
