@@ -15,7 +15,7 @@ import config
 dataset = os.environ.get('DATASET', 'DATASET_not_set')
 
 # Otherwise, you can set the dataset name manually here.
-# dataset = '1481_simple_mcar_1'
+# dataset = 'hospital'
 
 path = f"{dataset}_copy"
 path_ori = dataset
@@ -34,6 +34,9 @@ g_weights_path = models_base_path / 'generator.pkl'
 d_weights_path = models_base_path / 'discriminator.hdf5'
 path_neg = models_base_path / 'generated_sentences.txt'
 
+# Create these files
+for file in [g_pre_weights_path, d_pre_weights_path, g_weights_path, d_weights_path, path_neg]:
+    file.touch(exist_ok=True)
 
 order = config.order  # Order, 1 for positive order, 0 for negative order
 
@@ -51,7 +54,7 @@ try:
                             config.d_dropout,
                             config.generate_samples,
                             path_pos=path,
-                            path_neg=path_neg,
+                            path_neg=str(path_neg),
                             path_rules=path_rules,
                             g_lr=config.g_lr,
                             d_lr=config.d_lr,
@@ -60,8 +63,8 @@ try:
 
             trainer.pre_train(g_epochs=config.g_pre_epochs,
                             d_epochs=config.d_pre_epochs,
-                            g_pre_path=g_pre_weights_path,
-                            d_pre_path=d_pre_weights_path,
+                            g_pre_path=str(g_pre_weights_path),
+                            d_pre_path=str(d_pre_weights_path),
                             g_lr=config.g_pre_lr,
                             d_lr=config.d_pre_lr)
 
@@ -87,7 +90,7 @@ try:
                             config.d_dropout,
                             config.generate_samples,
                             path_pos=path,
-                            path_neg=path_neg,
+                            path_neg=str(path_neg),
                             g_lr=config.g_lr,
                             d_lr=config.d_lr,
                             n_sample=config.n_sample,
@@ -125,3 +128,4 @@ except Exception as e:
         file.write(json_data)
     print('Did not clean data successfully:')
     print(f'{exception_type}: {exception_message}')
+

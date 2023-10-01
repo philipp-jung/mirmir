@@ -5,7 +5,6 @@ def att_reverse(path, order, models_base_path):
     conn = sqlite3.connect("database.db")
     cursor = conn.cursor()
 
-    sql1 = "select * from \"" + path + "\" "
     cursor.execute(f"SELECT * FROM '{path}'")
     data1 = cursor.fetchall()  # All data
 
