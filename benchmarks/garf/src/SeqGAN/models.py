@@ -443,21 +443,20 @@ class Generator:
         for rulename, ruleinfo in list(rules_final.items()):
             num += 1
 
-            left = list(ruleinfo["reason"].keys())
-            word = list(ruleinfo["reason"].values())
-            k = list(ruleinfo["result"].keys())
-            right = k[0]
+            left = list(ruleinfo['reason'].keys())
+            word = list(ruleinfo['reason'].values())
+            right = f'"{list(ruleinfo["result"].keys())[0]}"'
+
             v = list(ruleinfo["result"].values())
             result = v[0]
 
-            sqlex = left[0] + "\"='" + word[0] + "'"
-            i = 1
-            while i < len(left):
-                sqlex = sqlex + ' and "' + left[i] + "\"='" + word[i] + "'"
-                i += 1
+            placeholders = ['"{}"=?'.format(col) for col in left]
+            where_clause = " AND ".join(placeholders)
 
-            sql1 = 'select "' + right + '" from "' + path + '" where "' + sqlex
-            cursor.execute(sql1)  # "City","State" ,where rownum<=10
+            sql = f"SELECT {right} FROM '{path}' WHERE {where_clause}"
+            
+            # Execute the parameterized query with the input data
+            cursor.execute(sql, word)
             rows = cursor.fetchall()
             num1 = len(rows)
             if num1 < 3:
@@ -654,29 +653,32 @@ class Generator:
 
         num = 0
         error_rule = 0
+
         conn = sqlite3.connect("database.db")
         cursor = conn.cursor()
+
         for rulename, ruleinfo in list(self.rule.items()):
             num += 1
-
             left = list(ruleinfo["reason"].keys())
             word = list(ruleinfo["reason"].values())
             k = list(ruleinfo["result"].keys())
             right = k[0]
             v = list(ruleinfo["result"].values())
             result = v[0]
-
             LHS = []
             LHS.append(att2label[left[0]])
             RHS = att2label[right]
-            sqlex = left[0] + "\"='" + word[0] + "'"
+            sqlex = f'"{left[0]}"=?'
+            params = (word[0],)
             i = 1
             while i < len(left):
-                sqlex = sqlex + ' and "' + left[i] + "\"='" + word[i] + "'"
+                sqlex += f' and "{left[i]}"=?'
+                params += (word[i],)
                 LHS.append(att2label[left[i]])
                 i += 1
 
-            cursor.execute('SELECT * FROM "' + path + '" where "' + sqlex)
+            query = 'SELECT * FROM "{}" WHERE {}'.format(path, sqlex)
+            cursor.execute(query, params)
             rows = cursor.fetchall()
 
             flag_trust = self.detect(rows, result, rulename, LHS, RHS, att2label, label2att)
@@ -723,20 +725,10 @@ class Generator:
                     break
                 left_new = label2att[min - 1]
                 print("Add", left_new, "Information")
-                sqladd = (
-                    'select "'
-                    + left_new
-                    + '" from "'
-                    + path
-                    + '" where "'
-                    + sqlex
-                    + 'and "'
-                    + right
-                    + "\"='"
-                    + result
-                    + "'"
-                )
-                cursor.execute(sqladd)
+
+
+                sqladd = 'SELECT "{}" FROM "{}" WHERE {} = ?'.format(left_new, path, sqlex + f' AND "{right}"')
+                cursor.execute(sqladd, (*word, result))
                 rows_left = cursor.fetchall()
 
                 # Reconstructing the dictionary
@@ -752,13 +744,17 @@ class Generator:
                 left = list(ruleinfo["reason"].keys())
                 word = list(ruleinfo["reason"].values())
 
-                sqlex = left[0] + "\"='" + word[0] + "'"
-                i = 1
+                conditions = []
+                i = 0
                 while i < len(left):
-                    sqlex = sqlex + ' and "' + left[i] + "\"='" + word[i] + "'"
+                    conditions.append(f'"{left[i]}" = ?')
                     i += 1
-                sql1 = 'select * from "' + path + '" where "' + sqlex
-                cursor.execute(sql1)
+
+                sqlex = ' AND '.join(conditions)
+                sql1 = 'SELECT * FROM "{}" WHERE {}'.format(path, sqlex)
+                values = [word[i] for i in range(len(left))]
+
+                cursor.execute(sql1, values)
                 rows = cursor.fetchall()
 
                 if len(rows) < 3:
@@ -899,26 +895,21 @@ class Generator:
                                 "t_c is",
                                 t_tc,
                             )
+
+                            conditions = []
                             for x in range(len(row) - 1):  # t2
-                                if x == 0:
-                                    sql_info = f"\"{label2att[x]}\"='{row[x]}'"
-                                else:
-                                    sql_info += f" and \"{label2att[x]}\"='{row[x]}'"
+                                conditions.append('"' + label2att[x] + '" = ?')
+                            sql_info = ' AND '.join(conditions)
                             sql_update = (
-                                'update "'
-                                + path
-                                + '" set "Label"=\'2\' , "'
-                                + label2att[RHS]
-                                + "\"='"
-                                + result
-                                + "' where  "
-                                + sql_info
-                                + ""
+                                'UPDATE "' + path + '" SET "Label" = ?, "' + label2att[RHS] + '" = ? WHERE ' + sql_info
                             )
-                            print("Original: ", sql_info)
-                            print("Update Information: ", sql_update)
-                            cursor.execute(sql_update)
+
+                            values = ['2', result] + [row[x] for x in range(len(row) - 1)]
+
+                            cursor.execute(sql_update, values)
                             conn.commit()
+
+
                         else:
                             print(rule_p_name)
                             if rule_p_name == []:
@@ -938,34 +929,17 @@ class Generator:
                                 "t_c is",
                                 t_tc,
                             )
+
+                            conditions = []
                             for x in range(len(row) - 1):  # t2
-                                if x == 0:
-                                    sql_info = (
-                                        '"' + label2att[x] + "\"='" + row[x] + "'"
-                                    )
-                                else:
-                                    sql_info = (
-                                        sql_info
-                                        + ' and "'
-                                        + label2att[x]
-                                        + "\"='"
-                                        + row[x]
-                                        + "'"
-                                    )
+                                conditions.append('"' + label2att[x] + '" = ?')
+                            sql_info = ' AND '.join(conditions)
                             sql_update = (
-                                'update "'
-                                + path
-                                + '" set "Label"=\'2\' , "'
-                                + label2att[flag_p]
-                                + "\"='"
-                                + result2
-                                + "' where  "
-                                + sql_info
-                                + ""
+                                'UPDATE "' + path + '" SET "Label" = ?, "' + label2att[flag_p] + '" = ? WHERE ' + sql_info
                             )
-                            print("Original: ", sql_info)
-                            print("Update Information: ", sql_update)
-                            cursor.execute(sql_update)
+
+                            values = ['2', result2] + [row[x] for x in range(len(row) - 1)]
+                            cursor.execute(sql_update, values)
                             conn.commit()
                             continue
 
