@@ -47,4 +47,4 @@ To get the data out of the PVC, create a pod which a) mounts the PVC, and b) loo
 A configuration of such a pod can be found in `infrastructure/pvc_access_pod.yaml`.
 You can submit it with `kubectly apply pvc_access_pod.yaml`.
 
-Once the pod runs, connect with `kubectl exec -it pvc-access-pod -- /bin/sh`, and copy results with `kubectl cp -r pvc-access-pod:data/ results/`.
+Once the pod runs, connect with `kubectl exec -it pvc-access-pod -- /bin/sh`, and copy results with `kubectl cp pvc-access-pod:/data/ results/`.
