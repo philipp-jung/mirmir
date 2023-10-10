@@ -37,7 +37,7 @@ class Logistic(Estimator, torch.nn.Module):
 
         # Sorted records of the currently populated domain. This helps us
         # align the final predicted probabilities.
-        self.domain_records = domain_df.sort_values('_vid_')[['_vid_', '_tid_', 'attribute', 'domain', 'init_value']].to_records()
+        self.domain_records = domain_df.sort_values('_vid_')[['_vid_', '_tid_', 'attribute', 'domain', 'init_value']].to_records(index=False)
 
         # self.dom maps tid --> attr --> list of domain values
         # we need to find the number of domain values we will be generating

@@ -235,7 +235,7 @@ class DomainEngine:
         # Iterate over dataset rows.
         cells = []
         vid = 0
-        records = self.ds.get_raw_data().to_records()
+        records = self.ds.get_raw_data().to_records(index=False)
         self.all_attrs = list(records.dtype.names)
         for row in tqdm(list(records)):
             tid = row['_tid_']
@@ -323,7 +323,7 @@ class DomainEngine:
         # weak labelling
         num_weak_labels = 0
         updated_domain_df = []
-        for preds, row in tqdm(zip(preds_by_cell, domain_df.to_records())):
+        for preds, row in tqdm(zip(preds_by_cell, domain_df.to_records(index=False))):
             # Do not re-label single valued cells.
             if row['fixed'] == CellStatus.SINGLE_VALUE.value:
                 updated_domain_df.append(row)
@@ -364,7 +364,7 @@ class DomainEngine:
             updated_domain_df.append(row)
 
         # update our cell domain df with our new updated domain
-        domain_df = pd.DataFrame.from_records(updated_domain_df, columns=updated_domain_df[0].dtype.names).drop('index', axis=1).sort_values('_vid_')
+        domain_df = pd.DataFrame.from_records(updated_domain_df, columns=updated_domain_df[0].dtype.names).sort_values('_vid_')
         logging.debug('DONE assembling cell domain table in %.2fs', time.clock() - tic)
 
         logging.info('number of (additional) weak labels assigned from posterior model: %d', num_weak_labels)

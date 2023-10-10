@@ -25,7 +25,7 @@ class NaiveBayes(Estimator):
 
         # TID to raw data tuple for prediction.
         self._raw_records_by_tid = {}
-        for row in self.ds.get_raw_data().to_records():
+        for row in self.ds.get_raw_data().to_records(index=False):
             self._raw_records_by_tid[row['_tid_']] = row
 
     def train(self):
@@ -72,7 +72,7 @@ class NaiveBayes(Estimator):
         during construction) and each Tuple is (val, proba) where
         val is the domain value and proba is the estimator's posterior probability estimate.
         """
-        for row in tqdm(self.domain_df.to_records()):
+        for row in tqdm(self.domain_df.to_records(index=False)):
             yield self.predict_pp(self._raw_records_by_tid[row['_tid_']], row['attribute'], row['domain'].split('|||'))
 
     def _get_corr_attributes(self, attr):
