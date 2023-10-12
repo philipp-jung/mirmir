@@ -7,7 +7,7 @@ import time
 import psycopg2
 import sqlalchemy as sql
 
-index_template = Template('CREATE INDEX $idx_title ON "$table" ($attrs)')
+index_template = Template('CREATE INDEX "$idx_title" ON "$table" ($attrs)')
 drop_table_template = Template('DROP TABLE IF EXISTS "$table"')
 create_table_template = Template('CREATE TABLE "$table" AS ($stmt)')
 

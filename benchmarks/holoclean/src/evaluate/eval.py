@@ -142,18 +142,18 @@ class EvalEngine:
         We also distinguish between repairs on correct cells and repairs on
         incorrect cells (correct cells are cells where init == ground truth).
         """
-        query = """
+        query = '''
         SELECT
             (t1.init_value = t3._value_) AS is_correct,
             count(*)
-        FROM   {} as t1, {} as t2, {} as t3
+        FROM   "{}" as t1, "{}" as t2, "{}" as t3
         WHERE  t1._tid_ = t2._tid_
           AND  t1.attribute = t2.attribute
           AND  t1.init_value != t2.rv_value
           AND  t1._tid_ = t3._tid_
           AND  t1.attribute = t3._attribute_
         GROUP BY is_correct
-          """.format(AuxTables.cell_domain.name,
+          '''.format(AuxTables.cell_domain.name,
                   AuxTables.inf_values_dom.name,
                   self.clean_data.name)
         res = self.ds.engine.execute_query(query)
@@ -201,13 +201,13 @@ class EvalEngine:
         This value is always equal or less than total errors (see
         compute_total_errors).
         """
-        query = "SELECT count(*) FROM " \
-                "  (SELECT _vid_ " \
-                "   FROM   %s as t1, %s as t2, %s as t3 " \
-                "   WHERE  t1._tid_ = t2._tid_ AND t1._cid_ = t3._cid_ " \
-                "     AND  t1.attribute = t2._attribute_ " \
-                "     AND  t1.init_value != t2._value_) AS t" \
-                % (AuxTables.cell_domain.name, self.clean_data.name, AuxTables.dk_cells.name)
+        query = '''SELECT count(*) FROM 
+                (SELECT _vid_
+                FROM   "{0}" as t1, "{1}" as t2, "{2}" as t3
+                WHERE  t1._tid_ = t2._tid_ AND t1._cid_ = t3._cid_
+                AND  t1.attribute = t2._attribute_
+                AND  t1.init_value != t2._value_) AS t
+                '''.format(AuxTables.cell_domain.name, self.clean_data.name, AuxTables.dk_cells.name)
         res = self.ds.engine.execute_query(query)
         self.detected_errors = float(res[0][0])
 
