@@ -8,7 +8,8 @@ from helpers import simple_mcar_column
 
 random.seed(0)
 openml_ids_binary = [725, 310, 1046, 823, 137, 42493, 4135, 251, 151, 40922]
-openml_ids_multiclass = [40498, 30, 1459, 1481, 184, 375, 32, 41027, 6, 40685, 43572]
+openml_ids_multiclass = [40498, 30, 1459, 1481, 184, 375, 32, 41027, 6, 40685,
+                         43572]
 
 fractions = [0.01, 0.05, 0.1, 0.3, 0.5]
 
@@ -34,6 +35,8 @@ def fetch_corrupt_imputer_dataset(data_id: int) -> List[Dict]:
     res = fetch_openml(data_id=data_id, as_frame=True)
 
     df = res["frame"]
+    if data_id == 43572:
+        df.columns = [x.replace('(', '').replace(')', '') for x in df.columns]
     se_target = res["target"]
     if se_target is None:
         if data_id == 43572:

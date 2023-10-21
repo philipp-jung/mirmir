@@ -43,6 +43,8 @@ def fetch_corrupt_dataset(data_id: int) -> List[Dict]:
     res = fetch_openml(data_id=data_id, as_frame=True)
 
     df = res["frame"]
+    if data_id == 43572:
+        df.columns = [x.replace('(', '').replace(')', '') for x in df.columns]
     clean_path, _ = dataset_paths(data_id, "", 0)
     df.to_csv(str(clean_path) + '.csv', index=False)
     df.to_parquet(str(clean_path) + '.parquet', index=False)
