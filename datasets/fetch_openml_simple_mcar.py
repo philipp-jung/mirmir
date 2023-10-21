@@ -4,21 +4,32 @@ from pathlib import Path
 
 import pandas as pd
 from sklearn.datasets import fetch_openml
-import ruska
+from helpers import simple_mcar
 
 random.seed(0)
 openml_ids_binary = [725, 310, 1046, 823, 137, 42493, 4135, 251, 151, 40922]
-openml_ids_multiclass = [40498, 30, 1459, 1481, 184, 375, 32, 41027, 6, 40685]
+openml_ids_multiclass = [40498,
+                         30,
+                         1459,
+                         1481,
+                         184,
+                         375,
+                         32,
+                         41027,
+                         6,
+                         40685,
+                         43572,  # imdb movies
+                         ]
 
 fractions = [0.01, 0.05, 0.1, 0.3, 0.5]
 
 
 def dataset_paths(
-    data_id: int, corruption: str, error_fraction: int
+    data_id: int, corruption: str, error_fraction: int|float
 ) -> Tuple[Path, Path]:
     directory = Path(f"openml/{data_id}")
     directory.mkdir(exist_ok=True)
-    clean_path = directory / "clean.csv"
+    clean_path = directory / "clean"
     corrupt_path = directory / f"{corruption}_{int(100*error_fraction)}"
     return clean_path, corrupt_path
 
@@ -33,12 +44,13 @@ def fetch_corrupt_dataset(data_id: int) -> List[Dict]:
 
     df = res["frame"]
     clean_path, _ = dataset_paths(data_id, "", 0)
-    df.to_csv(clean_path, index=False)
+    df.to_csv(str(clean_path) + '.csv', index=False)
+    df.to_parquet(str(clean_path) + '.parquet', index=False)
     metadata = []
 
     corruption_name = "simple_mcar"
     for fraction in fractions:
-        df_corrupted = ruska.simple_mcar(df, fraction)
+        df_corrupted = simple_mcar(df, fraction)
 
         metadata.append(
             {

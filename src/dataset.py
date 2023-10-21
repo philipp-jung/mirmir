@@ -56,7 +56,8 @@ class Dataset:
         self.version = None
         self.error_class = None
 
-        openml_dataset_ids = ["725", "310", "1046", "823", "137", "42493", "4135", "251", "151", "40922", "40498", "30", "1459", "1481", "184", "375", "32", "41027", "6", "40685"]
+        openml_dataset_ids = ["725", "310", "1046", "823", "137", "42493", "4135", "251", "151", "40922", "40498", "30", "1459", "1481", "184", "375", "32", "41027", "6", "40685", "43572"]
+        hpi_dataset_ids = ["cddb"]
         renuver_dataset_ids = ["bridges", "cars", "glass", "restaurant"]
         baran_dataset_ids = ["beers", "flights", "hospital", "tax", "rayyan", "toy", "debug", "synth-debug"]
         uci_dataset_ids = ["adult", "breast-cancer", "letter", "nursery"]
@@ -79,6 +80,18 @@ class Dataset:
             self.name = dataset_name
             self.error_fraction = error_fraction
             self.version = version
+
+        elif dataset_name in hpi_dataset_ids:
+            if error_class is None:
+                raise ValueError('Please specify the error class with which the openml dataset has been corrupted.')
+            self.path = f"../datasets/{dataset_name}/{error_class}_{error_fraction}.csv"
+            self.parquet_path = f"../datasets/{dataset_name}/{error_class}_{error_fraction}.parquet"
+            self.clean_path = f"../datasets/{dataset_name}/clean.csv"
+            self.typed_clean_path = os.path.splitext(self.clean_path)[0] + '.parquet'
+
+            self.name = dataset_name
+            self.error_class = error_class
+            self.error_fraction = error_fraction
 
         elif dataset_name in openml_dataset_ids:
             if error_class is None:

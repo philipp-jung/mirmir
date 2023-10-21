@@ -103,7 +103,6 @@ class Cleaning:
         self.MAX_VALUE_LENGTH = 50
 
         # variable for debugging CV
-        self.n_true_classes = {}
         self.sampled_tuples = 0
 
     @staticmethod
@@ -630,7 +629,7 @@ class Cleaning:
             #         d.synth_corrections.get(model_name)[error_cell] = correction_dicts
 
             if self.VERBOSE:
-                print(f"Synth features generated.")
+                print("Synth features generated.")
 
 
     def binary_predict_corrections(self, d):
@@ -641,6 +640,10 @@ class Cleaning:
         column_errors = error_positions.original_column_errors()
         pair_features = d.corrections.assemble_pair_features()
         synth_pair_features = d.synth_corrections.assemble_pair_features()
+
+        if self.LABELING_BUDGET < self.sampled_tuples:
+            a = 1
+            print('final thing')
 
         for j in column_errors:
             if d.corrections.value_cleaning_pct(column_errors[j]) > 0.3:
@@ -688,9 +691,6 @@ class Cleaning:
 
             ml_helpers.set_binary_cleaning_suggestions(predicted_labels, error_correction_suggestions, d.corrected_cells)
 
-        if self.sampled_tuples == self.LABELING_BUDGET:
-            a = 1
-
         if self.VERBOSE:
             print("{:.0f}% ({} / {}) of data errors are corrected.".format(
                 100 * len(d.corrected_cells) / len(d.detected_cells),
@@ -737,13 +737,13 @@ class Cleaning:
 
         ran_without_samples = False
         while len(d.labeled_tuples) <= self.LABELING_BUDGET:
-            if self.LABELING_BUDGET == 0 and ran_without_samples == False:
+            if self.LABELING_BUDGET == 0 and not ran_without_samples:  # self-supervised
                 self.prepare_augmented_models(d)
                 self.generate_features(d, synchronous=True)
                 self.generate_synth_features(d, synchronous=True)
                 self.binary_predict_corrections(d)
                 ran_without_samples = True
-            else:
+            else:  # supervised
                 self.sample_tuple(d, random_seed=random_seed)
                 self.label_with_ground_truth(d)
                 self.update_models(d)
@@ -757,15 +757,13 @@ class Cleaning:
                 print(
                     "Cleaning performance on {}:\nPrecision = {:.2f}\nRecall = {:.2f}\nF1 = {:.2f}".format(d.name, p, r,
                                                                                                            f))
-        if self.VERBOSE:
-            print("Number of true classes: {}".format(self.n_true_classes))
         return d.corrected_cells
 
 
 if __name__ == "__main__":
     # configure Cleaning object
 
-    dataset_name = "flights"
+    dataset_name = "43572"
     error_class = 'simple_mcar'
     error_fraction = 1
     version = 1
@@ -778,7 +776,7 @@ if __name__ == "__main__":
     gpdep_threshold = 0.3
     training_time_limit = 30
     #feature_generators = ['domain_instance', 'fd', 'auto_instance', 'llm_master', 'llm_correction']
-    feature_generators = [ 'fd', ]
+    feature_generators = ['domain_instance']
     classification_model = "ABC"
     vicinity_orders = [1, 2]
     n_best_pdeps = 3
@@ -800,5 +798,3 @@ if __name__ == "__main__":
     app.VERBOSE = True
     seed = 0
     correction_dictionary = app.run(data, seed)
-    p, r, f = data.get_data_cleaning_evaluation(correction_dictionary)[-3:]
-    print("Cleaning performance on {}:\nPrecision = {:.2f}\nRecall = {:.2f}\nF1 = {:.2f}".format(data.name, p, r, f))
