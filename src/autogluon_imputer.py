@@ -101,7 +101,8 @@ class AutoGluonImputer():
 
         self.predictor = TabularPredictor(label=self.output_column,
                                       path=self.ag_model_path,
-                                      verbosity=self.verbosity).\
+                                      verbosity=self.verbosity,
+                                      problem_type='multiclass').\
         fit(train_data=train_df,
             tuning_data=test_df,
             time_limit=time_limit,

@@ -18,7 +18,7 @@ def generate_jobs(jobs_path: Path) -> int:
                 'dataset': d
                 })
 
-    for d in [137, 184, 1481, 41027]:
+    for d in [137, 184, 1481, 41027, 43572]:
         for d_type in ['simple_mcar', 'imputer_simple_mcar']:
             for pct in [1, 5, 10]:
                 for r in range(3):
@@ -61,7 +61,7 @@ spec:
       volumes:
         - name: data-volume
           persistentVolumeClaim:
-            claimName: garf-results
+            claimName: garf-measurements
     """
 
     for i, d in enumerate(datasets):

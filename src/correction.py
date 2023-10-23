@@ -775,8 +775,8 @@ if __name__ == "__main__":
     clean_with_user_input = True  # Careful: If set to False, d.corrected_cells will remain empty.
     gpdep_threshold = 0.3
     training_time_limit = 30
-    #feature_generators = ['domain_instance', 'fd', 'auto_instance', 'llm_master', 'llm_correction']
-    feature_generators = ['domain_instance']
+    feature_generators = ['domain_instance', 'fd', 'auto_instance', 'llm_master', 'llm_correction']
+    # feature_generators = ['auto_instance']
     classification_model = "ABC"
     vicinity_orders = [1, 2]
     n_best_pdeps = 3

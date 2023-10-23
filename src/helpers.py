@@ -110,7 +110,7 @@ class Corrections:
         confident_corrections = 0
         for error_cell in errors_in_column:
             correction_suggestions = self.correction_store['llm_correction'].get(error_cell)
-            if correction_suggestions is not None:
+            if correction_suggestions is not None and len(correction_suggestions) != 0:
                 if list(correction_suggestions.values())[0] > confidence_threshold:
                     confident_corrections += 1
         return confident_corrections/len(errors_in_column)

@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: pvc-access-pod
+  name: tool
 spec:
   containers:
   - args:
@@ -11,11 +11,11 @@ spec:
     - -c
     - --
     image: debian
-    name: pvc-access-pod
+    name: tool
     volumeMounts:
     - mountPath: /data
       name: data-volume
   volumes:
   - name: data-volume
     persistentVolumeClaim:
-      claimName: garf-results
+      claimName: garf-measurements
