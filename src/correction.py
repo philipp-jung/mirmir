@@ -641,7 +641,7 @@ class Cleaning:
         pair_features = d.corrections.assemble_pair_features()
         synth_pair_features = d.synth_corrections.assemble_pair_features()
 
-        if self.LABELING_BUDGET < self.sampled_tuples:
+        if self.LABELING_BUDGET == len(d.labeled_tuples):
             a = 1
             print('final thing')
 
@@ -736,7 +736,7 @@ class Cleaning:
         self.initialize_models(d)
 
         ran_without_samples = False
-        while len(d.labeled_tuples) <= self.LABELING_BUDGET:
+        while len(d.labeled_tuples) < self.LABELING_BUDGET:
             if self.LABELING_BUDGET == 0 and not ran_without_samples:  # self-supervised
                 self.prepare_augmented_models(d)
                 self.generate_features(d, synchronous=True)
@@ -764,8 +764,8 @@ if __name__ == "__main__":
     # configure Cleaning object
 
     dataset_name = "43572"
-    error_class = 'simple_mcar'
-    error_fraction = 1
+    error_class = 'imputer_simple_mcar'
+    error_fraction = 5
     version = 1
 
     labeling_budget = 20
@@ -775,7 +775,7 @@ if __name__ == "__main__":
     clean_with_user_input = True  # Careful: If set to False, d.corrected_cells will remain empty.
     gpdep_threshold = 0.3
     training_time_limit = 30
-    feature_generators = ['domain_instance', 'fd', 'auto_instance', 'llm_master', 'llm_correction']
+    feature_generators = ['auto_instance', 'domain_instance', 'fd', 'llm_correction', 'llm_master']
     # feature_generators = ['auto_instance']
     classification_model = "ABC"
     vicinity_orders = [1, 2]

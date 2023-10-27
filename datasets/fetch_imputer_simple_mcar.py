@@ -7,8 +7,8 @@ from sklearn.datasets import fetch_openml
 from helpers import simple_mcar_column
 
 random.seed(0)
-openml_ids_binary = [725, 310, 1046, 823, 137, 42493, 4135, 251, 151, 40922]
-openml_ids_multiclass = [40498, 30, 1459, 1481, 184, 375, 32, 41027, 6, 40685,
+openml_ids_binary = [] #[725, 310, 1046, 823, 137, 42493, 4135, 251, 151, 40922]
+openml_ids_multiclass = [#40498, 30, 1459, 1481, 184, 375, 32, 41027, 6, 40685,
                          43572]
 
 fractions = [0.01, 0.05, 0.1, 0.3, 0.5]
@@ -40,9 +40,9 @@ def fetch_corrupt_imputer_dataset(data_id: int) -> List[Dict]:
     se_target = res["target"]
     if se_target is None:
         if data_id == 43572:
-            se_target = df['Title']
+            se_target = df['Year']
         else:
-            raise ValueError('OpenML dataset comes without target.')
+            raise ValueError('OpenML dataset comes without target, specify one manually.')
     clean_path, _ = dataset_paths(data_id, "", 0)
     df.to_csv(str(clean_path) + '.csv', index=False)
     df.to_parquet(str(clean_path) + '.parquet', index=False)
@@ -50,9 +50,13 @@ def fetch_corrupt_imputer_dataset(data_id: int) -> List[Dict]:
 
     corruption_name = "imputer_simple_mcar"
     for fraction in fractions:
-        simple_mcar_column(se_target, fraction)  # object is corrupted
+        se_corrupt = simple_mcar_column(se_target, fraction)  # object is corrupted
         df_corrupted = df.copy()
-        df_corrupted.iloc[:, -1] = se_target
+        if data_id == 43572:
+            df_corrupted['Year'] = se_corrupt
+        else:
+            df_corrupted.iloc[:, -1] = se_corrupt
+
 
         metadata.append(
             {
