@@ -784,7 +784,6 @@ if __name__ == "__main__":
     vicinity_feature_generator = "pdep"
     pdep_features = ['pr']
     fd_feature = 'pr'
-
     test_synth_data_direction = 'user_data'
 
     # Set this parameter to keep runtimes low when debugging

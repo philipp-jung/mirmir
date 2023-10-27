@@ -1,5 +1,5 @@
 import os
-import raha
+import correction
 import logging
 from ruska import Ruska
 from pathlib import Path
@@ -21,10 +21,10 @@ def run_baran(i: int, c: dict):
     version = c["run"] + 1  # dataset versions are 1-indexed, Ruska runs are 0-indexed.
 
     try:
-        data = raha.Dataset(c['dataset'], c['error_fraction'], version, c['error_class'], c["n_rows"])
+        data = correction.Dataset(c['dataset'], c['error_fraction'], version, c['error_class'], c["n_rows"])
         data.detected_cells = data.get_errors_dictionary()
 
-        app = raha.Cleaning(
+        app = correction.Cleaning(
             c["labeling_budget"],
             c["classification_model"],
             c["clean_with_user_input"],
@@ -57,7 +57,7 @@ def run_baran(i: int, c: dict):
 
 
 if __name__ == "__main__":
-    experiment_name = "2023-08-26-unsupervised-benchmark"
+    experiment_name = "2023-10-27-new-mirmir-benchmark"
     save_path = "/root/measurements"
 
     logging.root.handlers = []  # deletes the default StreamHandler to stderr.
@@ -82,13 +82,13 @@ if __name__ == "__main__":
 
     rsk_baran = Ruska(
         name=f"{experiment_name}-baran",
-        description="Unsupervised benchmark.",
-        commit="",
+        description="New Mirmir baseline.",
+        commit="9d00767715872eb97559772edc7304be1e47aa83",
         config={
             "dataset": "1481",
             "error_class": "simple_mcar",
             "error_fraction": 1,
-            "labeling_budget": 0,
+            "labeling_budget": 20,
             "synth_tuples": 100,
             "auto_instance_cache_model": False,
             "clean_with_user_input": True,
@@ -102,7 +102,7 @@ if __name__ == "__main__":
             "synth_cleaning_threshold": 0.9,
             "test_synth_data_direction": "user_data",
             "pdep_features": ['pr'],
-            "gpdep_threshold": 0.5,
+            "gpdep_threshold": 0.3,
         },
         ranges={
             "dataset": ["beers", "flights", "hospital", "rayyan"],
@@ -115,13 +115,13 @@ if __name__ == "__main__":
 
     rsk_openml = Ruska(
         name=f"{experiment_name}-openml",
-        description="Unsupervised benchmark.",
-        commit="",
+        description="New Mirmir baseline.",
+        commit="9d00767715872eb97559772edc7304be1e47aa83",
         config={
             "dataset": "1481",
             "error_class": "simple_mcar",
             "error_fraction": 1,
-            "labeling_budget": 0,
+            "labeling_budget": 20,
             "synth_tuples": 100,
             "auto_instance_cache_model": False,
             "clean_with_user_input": True,
@@ -135,10 +135,10 @@ if __name__ == "__main__":
             "synth_cleaning_threshold": 0.9,
             "test_synth_data_direction": "user_data",
             "pdep_features": ['pr'],
-            "gpdep_threshold": 0.5,
+            "gpdep_threshold": 0.3,
         },
         ranges={
-            "dataset": ["6", "137", "184", "1481", "41027"],
+            "dataset": ["6", "137", "184", "1481", "41027", "43572"],
             "error_fraction": [1, 5],
         },
         runs=3,
@@ -149,13 +149,13 @@ if __name__ == "__main__":
 
     rsk_renuver = Ruska(
         name=f"{experiment_name}-renuver",
-        description="Unsupervised benchmark.",
-        commit="",
+        description="New Mirmir baseline.",
+        commit="9d00767715872eb97559772edc7304be1e47aa83",
         config={
             "dataset": "1481",
             "error_class": "simple_mcar",
             "error_fraction": 1,
-            "labeling_budget": 0,
+            "labeling_budget": 20,
             "synth_tuples": 100,
             "auto_instance_cache_model": False,
             "clean_with_user_input": True,
@@ -169,7 +169,7 @@ if __name__ == "__main__":
             "synth_cleaning_threshold": 0.9,
             "test_synth_data_direction": "user_data",
             "pdep_features": ['pr'],
-            "gpdep_threshold": 0.5,
+            "gpdep_threshold": 0.3,
         },
         ranges={
             'dataset': ['bridges', 'cars', 'glass', 'restaurant'],
