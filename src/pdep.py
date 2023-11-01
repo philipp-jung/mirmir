@@ -1,4 +1,5 @@
 import os
+import platform
 import subprocess
 import pandas as pd
 from typing import Tuple, List, Dict, Union
@@ -506,9 +507,21 @@ def mine_fds(df_clean_iterative: pd.DataFrame, df_ground_truth: pd.DataFrame) ->
     df_clean_iterative.to_csv(dirty_path, index=False, encoding="utf-8")
     df_ground_truth.to_csv(clean_path, index=False, encoding="utf-8")
 
+    # Identify system and machine
+    system = platform.system()
+    machine = platform.machine()
+
+    if machine == 'arm64' and system == 'Darwin':
+        binary = "HyFDMirmir-1.3-arm64-darwin.jar"
+    elif machine == 'x86_64' and system == 'Linux':
+        binary = "HyFDMirmir-1.3-x86_64-linux.jar"
+    else:
+        raise ValueError('We have HyFDMirmir precompiled for arm64 darwin and x86_64 linux systems. '
+        'You will have to compile HyFDMirmir for your system and architecture yourself.')
+
     # Execute HyFDMirmir. Do not write output to stdout.
     try:
-        subprocess.run(["java", "-jar", "HyFDMimir-1.3.jar", dirty_path, clean_path, fd_path],
+        subprocess.run(["java", "-jar", binary, dirty_path, clean_path, fd_path],
                        stdout=subprocess.DEVNULL)
     except FileNotFoundError:
         print("HyFDMimir-1.3.jar not found. Please compile it first, following the instructions in the README.")
