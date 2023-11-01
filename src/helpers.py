@@ -300,7 +300,7 @@ def llm_response_to_corrections(correction_tokens: dict, token_logprobs: dict, t
     #     top_corrections = {c['correction']: np.exp(c['logprob']) for c in corrections if c['logprob'] > -4.60517}
     #     return top_corrections
     correction = ''.join(correction_tokens)
-    if correction in ['NULL', '<NULL>', 'null', '<null>']:
+    if correction.strip() in ['NULL', '<NULL>', 'null', '<null>']:
         return {}
     return {correction: np.exp(sum(token_logprobs))}
 

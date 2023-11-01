@@ -643,7 +643,6 @@ class Cleaning:
 
         if self.LABELING_BUDGET == len(d.labeled_tuples):
             a = 1
-            print('final thing')
 
         for j in column_errors:
             if d.corrections.value_cleaning_pct(column_errors[j]) > 0.3:
@@ -763,12 +762,12 @@ class Cleaning:
 if __name__ == "__main__":
     # configure Cleaning object
 
-    dataset_name = "43572"
-    error_class = 'imputer_simple_mcar'
+    dataset_name = "rayyan"
+    error_class = 'simple_mcar'
     error_fraction = 5
     version = 1
 
-    labeling_budget = 20
+    labeling_budget = 22
     synth_tuples = 100
     synth_cleaning_threshold = 0.9
     auto_instance_cache_model = False
@@ -776,11 +775,11 @@ if __name__ == "__main__":
     gpdep_threshold = 0.3
     training_time_limit = 30
     feature_generators = ['auto_instance', 'domain_instance', 'fd', 'llm_correction', 'llm_master']
-    # feature_generators = ['auto_instance']
+    #feature_generators = ['fd', 'llm_correction']
     classification_model = "ABC"
     vicinity_orders = [1, 2]
     n_best_pdeps = 3
-    n_rows = 1000
+    n_rows = None
     vicinity_feature_generator = "pdep"
     pdep_features = ['pr']
     fd_feature = 'pr'
