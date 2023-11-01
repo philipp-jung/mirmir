@@ -47,7 +47,7 @@ def run_mirmir(c: dict):
                 }
     except Exception as e:
         return {"status": 0,
-                "result": e,
+                "result": str(e),
                 "config": c}
 
 

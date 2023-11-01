@@ -17,3 +17,5 @@ datasets/export_metanome/*
 # HyFDMirmir
 HyFDMimir/
 
+# infra
+infrastructure/jobs/
