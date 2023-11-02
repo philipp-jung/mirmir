@@ -84,8 +84,9 @@ def main():
         "synth_tuples": 100,
         "auto_instance_cache_model": False,
         "clean_with_user_input": True,
+        "gpdep_threshold": 0.3,
         "training_time_limit": 30,
-        "feature_generators": ["llm_correction", "llm_master", "auto_instance", "domain"],
+        "feature_generators": ["llm_correction", "llm_master", "auto_instance", "fd", "domain"],
         "classification_model": "ABC",
         "vicinity_orders": [1, 2],
         "vicinity_feature_generator": "pdep",
@@ -94,7 +95,7 @@ def main():
         "synth_cleaning_threshold": 0.9,
         "test_synth_data_direction": "user_data",
         "pdep_features": ['pr'],
-        "gpdep_threshold": 0.3,
+        "fd_feature": "gpdep"
     }
     ranges = {
             "dataset": ["beers", "flights", "hospital", "rayyan"],

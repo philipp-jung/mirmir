@@ -762,7 +762,7 @@ class Cleaning:
 if __name__ == "__main__":
     # configure Cleaning object
 
-    dataset_name = "rayyan"
+    dataset_name = "flights"
     error_class = 'simple_mcar'
     error_fraction = 5
     version = 1
@@ -782,7 +782,7 @@ if __name__ == "__main__":
     n_rows = None
     vicinity_feature_generator = "pdep"
     pdep_features = ['pr']
-    fd_feature = 'pr'
+    fd_feature = 'gpdep'
     test_synth_data_direction = 'user_data'
 
     # Set this parameter to keep runtimes low when debugging

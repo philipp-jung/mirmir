@@ -33,6 +33,7 @@ def run_mirmir(c: dict):
             c["test_synth_data_direction"],
             c["pdep_features"],
             c["gpdep_threshold"],
+            c['fd_feature']
         )
         app.VERBOSE = False
         seed = None
