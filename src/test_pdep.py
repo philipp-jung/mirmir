@@ -1,6 +1,6 @@
 import unittest
 import pandas as pd
-from raha import pdep
+import pdep
 
 
 class TestPdep(unittest.TestCase):

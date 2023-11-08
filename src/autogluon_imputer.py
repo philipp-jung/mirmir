@@ -107,7 +107,8 @@ class AutoGluonImputer():
             tuning_data=test_df,
             time_limit=time_limit,
             calibrate=True,
-            verbosity=self.verbosity)
+            verbosity=self.verbosity,
+            num_cpus="25")
 
         return self
 

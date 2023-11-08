@@ -10,9 +10,7 @@ import os
 import math
 import pickle
 import random
-import unicodedata
 import multiprocessing
-import json
 from itertools import combinations
 
 import numpy as np
@@ -767,22 +765,23 @@ if __name__ == "__main__":
     error_fraction = 5
     version = 1
 
-    labeling_budget = 22
+    labeling_budget = 20
     synth_tuples = 100
     synth_cleaning_threshold = 0.9
     auto_instance_cache_model = False
     clean_with_user_input = True  # Careful: If set to False, d.corrected_cells will remain empty.
     gpdep_threshold = 0.3
     training_time_limit = 30
-    feature_generators = ['auto_instance', 'domain_instance', 'fd', 'llm_correction', 'llm_master']
-    #feature_generators = ['fd', 'llm_correction']
+    #feature_generators = ['auto_instance', 'domain_instance', 'fd', 'llm_correction', 'llm_master']
+    feature_generators = ['vicinity']
     classification_model = "ABC"
-    vicinity_orders = [1, 2]
-    n_best_pdeps = 3
-    n_rows = None
-    vicinity_feature_generator = "pdep"
-    pdep_features = ['pr']
+    #fd_feature = 'gpdep'
     fd_feature = 'gpdep'
+    vicinity_orders = [1]
+    n_best_pdeps = 3
+    n_rows = 1000
+    vicinity_feature_generator = "naive"
+    pdep_features = ['pr']
     test_synth_data_direction = 'user_data'
 
     # Set this parameter to keep runtimes low when debugging

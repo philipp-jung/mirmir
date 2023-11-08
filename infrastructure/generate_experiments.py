@@ -47,9 +47,11 @@ spec:
       labels:
         app: {}
     spec:
-      nodeSelector:
-        cpuclass: epyc
       restartPolicy: Never
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Exists
+          effect: NoSchedule
       containers:
         - name: mirmir
           image: docker.io/larmor27/mirmir:latest
@@ -61,6 +63,17 @@ spec:
           volumeMounts:
             - name: mirmir-results-volume
               mountPath: /measurements  # Mounting the PVC at /app/output directory in the container
+          resources:
+            requests:
+              # only start on nodes with 64Gi of RAM available 
+              memory: "64Gi"   
+              # only start on nodes with 26 CPU cores available
+              cpu: 26   
+            limits:
+              # kill the pod when it uses more than 64Gi of RAM
+              memory: "64Gi"  
+              # restrict the pod to never use more than 26 full CPU cores
+              cpu: 26
       volumes:
         - name: mirmir-results-volume
           persistentVolumeClaim:
@@ -74,9 +87,13 @@ spec:
         f.write(job_config)
 
 def main():
-    experiment_name = "2023-10-27-new-mirmir-benchmark"
+    experiment_name = "2023-11-03-llm-correction-only"
 
-    config = {
+    baran_configs = combine_configs(
+        ranges={
+        "dataset": ["beers", "flights", "hospital", "rayyan"],
+        },
+        config={
         "dataset": "1481",
         "error_class": "simple_mcar",
         "error_fraction": 1,
@@ -86,7 +103,7 @@ def main():
         "clean_with_user_input": True,
         "gpdep_threshold": 0.3,
         "training_time_limit": 30,
-        "feature_generators": ["llm_correction", "llm_master", "auto_instance", "fd", "domain"],
+        "feature_generators": ["llm_correction"],
         "classification_model": "ABC",
         "vicinity_orders": [1, 2],
         "vicinity_feature_generator": "pdep",
@@ -95,14 +112,72 @@ def main():
         "synth_cleaning_threshold": 0.9,
         "test_synth_data_direction": "user_data",
         "pdep_features": ['pr'],
-        "fd_feature": "gpdep"
-    }
-    ranges = {
-            "dataset": ["beers", "flights", "hospital", "rayyan"],
-    }
-    runs = 3
+        "fd_feature": "pr",
+        },
+        runs=3
+    )
 
-    configs = combine_configs(ranges, config, runs)
+    renuver_configs = combine_configs(
+        ranges={
+        "dataset": ['bridges', 'cars', 'glass', 'restaurant'],
+        "error_fraction": [1, 3],
+        },
+        config={
+        "dataset": "1481",
+        "error_class": "simple_mcar",
+        "error_fraction": 1,
+        "labeling_budget": 20,
+        "synth_tuples": 100,
+        "auto_instance_cache_model": False,
+        "clean_with_user_input": True,
+        "gpdep_threshold": 0.3,
+        "training_time_limit": 30,
+        "feature_generators": ["llm_correction"],
+        "classification_model": "ABC",
+        "vicinity_orders": [1, 2],
+        "vicinity_feature_generator": "pdep",
+        "n_rows": None,
+        "n_best_pdeps": 3,
+        "synth_cleaning_threshold": 0.9,
+        "test_synth_data_direction": "user_data",
+        "pdep_features": ['pr'],
+        "fd_feature": "pr",
+        },
+        runs=3
+    )
+
+    openml_configs = combine_configs(
+        ranges={
+            "dataset": ["6", "137", "184", "1481", "41027", "43572"],
+            "error_fraction": [1, 5],
+            "error_class": ["simple_mcar", "imputer_simple_mcar"],
+        },
+        config={
+        "dataset": "1481",
+        "error_class": "simple_mcar",
+        "error_fraction": 1,
+        "labeling_budget": 20,
+        "synth_tuples": 100,
+        "auto_instance_cache_model": False,
+        "clean_with_user_input": True,
+        "gpdep_threshold": 0.3,
+        "training_time_limit": 30,
+        "feature_generators": ["llm_correction"],
+        "classification_model": "ABC",
+        "vicinity_orders": [1, 2],
+        "vicinity_feature_generator": "pdep",
+        "n_rows": 1000,
+        "n_best_pdeps": 3,
+        "synth_cleaning_threshold": 0.9,
+        "test_synth_data_direction": "user_data",
+        "pdep_features": ['pr'],
+        "fd_feature": "pr",
+        },
+        runs=3
+    )
+
+    # merge configs
+    configs = [*baran_configs, *renuver_configs, *openml_configs]
 
     jobs_path = Path('jobs/')
     jobs_path.mkdir(parents=True, exist_ok=True)
@@ -112,6 +187,7 @@ def main():
         if file_path.is_file():
             file_path.unlink()
 
+    i = 0
     for i, config in enumerate(configs):
         generat_job(config, experiment_name, jobs_path)
 
