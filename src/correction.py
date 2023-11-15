@@ -773,13 +773,12 @@ if __name__ == "__main__":
     gpdep_threshold = 0.3
     training_time_limit = 30
     #feature_generators = ['auto_instance', 'domain_instance', 'fd', 'llm_correction', 'llm_master']
-    feature_generators = ['vicinity']
+    feature_generators = ['fd']
     classification_model = "ABC"
-    #fd_feature = 'gpdep'
-    fd_feature = 'gpdep'
+    fd_feature = 'epdep'
     vicinity_orders = [1]
     n_best_pdeps = 3
-    n_rows = 1000
+    n_rows = None
     vicinity_feature_generator = "naive"
     pdep_features = ['pr']
     test_synth_data_direction = 'user_data'

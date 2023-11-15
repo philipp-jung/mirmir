@@ -31,7 +31,7 @@ def combine_configs(ranges: dict, config: dict, runs: int):
 
     return configs
 
-def generat_job(config: dict, experiment_name: str, jobs_path: Path):
+def generat_job(config: dict, experiment_name: str, jobs_path: Path, id: int):
     """
     Generates a kubernetes job config to run a mirmir experiment.
     """
@@ -52,6 +52,7 @@ spec:
         - key: nvidia.com/gpu
           operator: Exists
           effect: NoSchedule
+      priorityClassName: unimportant
       containers:
         - name: mirmir
           image: docker.io/larmor27/mirmir:latest
@@ -80,18 +81,23 @@ spec:
             claimName: mirmir-results-volume
     """
 
-    unique_id = f'{experiment_name}-{random.choice(range(1000000, 9999999))}'
+    unique_id = f'{experiment_name}-{id}'
     unique_id = unique_id.replace('_', '-')
     job_config = template.format(unique_id, unique_id, json.dumps(config), unique_id)
     with open(jobs_path / f'{unique_id}.yml', 'wt') as f:
         f.write(job_config)
 
 def main():
-    experiment_name = "2023-11-03-llm-correction-only"
+    experiment_name = "2023-11-15-phodi-features"
 
     baran_configs = combine_configs(
         ranges={
         "dataset": ["beers", "flights", "hospital", "rayyan"],
+        "feature_generators": [
+            ['auto_instance', 'domain_instance', 'fd', 'llm_correction', 'llm_master'],
+            ['fd']
+        ],
+        "fd_feature": ['pr', 'pdep', 'gpdep', 'epdep'],
         },
         config={
         "dataset": "1481",
@@ -102,17 +108,17 @@ def main():
         "auto_instance_cache_model": False,
         "clean_with_user_input": True,
         "gpdep_threshold": 0.3,
-        "training_time_limit": 30,
-        "feature_generators": ["llm_correction"],
+        "training_time_limit": 90,
+        "feature_generators": ['auto_instance', 'domain_instance', 'fd', 'llm_correction', 'llm_master'],
         "classification_model": "ABC",
-        "vicinity_orders": [1, 2],
-        "vicinity_feature_generator": "pdep",
+        "vicinity_orders": [1],
+        "vicinity_feature_generator": "naive",
         "n_rows": None,
         "n_best_pdeps": 3,
         "synth_cleaning_threshold": 0.9,
         "test_synth_data_direction": "user_data",
         "pdep_features": ['pr'],
-        "fd_feature": "pr",
+        "fd_feature": "gpdep",
         },
         runs=3
     )
@@ -121,6 +127,11 @@ def main():
         ranges={
         "dataset": ['bridges', 'cars', 'glass', 'restaurant'],
         "error_fraction": [1, 3],
+        "feature_generators": [
+            ['auto_instance', 'domain_instance', 'fd', 'llm_correction', 'llm_master'],
+            ['fd']
+        ],
+        "fd_feature": ['pr', 'pdep', 'gpdep', 'epdep'],
         },
         config={
         "dataset": "1481",
@@ -131,26 +142,31 @@ def main():
         "auto_instance_cache_model": False,
         "clean_with_user_input": True,
         "gpdep_threshold": 0.3,
-        "training_time_limit": 30,
-        "feature_generators": ["llm_correction"],
+        "training_time_limit": 90,
+        "feature_generators": ['auto_instance', 'domain_instance', 'fd', 'llm_correction', 'llm_master'],
         "classification_model": "ABC",
-        "vicinity_orders": [1, 2],
-        "vicinity_feature_generator": "pdep",
+        "vicinity_orders": [1],
+        "vicinity_feature_generator": "naive",
         "n_rows": None,
         "n_best_pdeps": 3,
         "synth_cleaning_threshold": 0.9,
         "test_synth_data_direction": "user_data",
         "pdep_features": ['pr'],
-        "fd_feature": "pr",
+        "fd_feature": "gpdep",
         },
         runs=3
     )
 
     openml_configs = combine_configs(
         ranges={
-            "dataset": ["6", "137", "184", "1481", "41027", "43572"],
-            "error_fraction": [1, 5],
-            "error_class": ["simple_mcar", "imputer_simple_mcar"],
+        "dataset": ["6", "137", "184", "1481", "41027", "43572"],
+        "error_fraction": [1, 5],
+        "error_class": ["simple_mcar", "imputer_simple_mcar"],
+        "feature_generators": [
+            ['auto_instance', 'domain_instance', 'fd', 'llm_correction', 'llm_master'],
+            ['fd']
+        ],
+        "fd_feature": ['pr', 'pdep', 'gpdep', 'epdep'],
         },
         config={
         "dataset": "1481",
@@ -161,17 +177,17 @@ def main():
         "auto_instance_cache_model": False,
         "clean_with_user_input": True,
         "gpdep_threshold": 0.3,
-        "training_time_limit": 30,
-        "feature_generators": ["llm_correction"],
+        "training_time_limit": 90,
+        "feature_generators": ['auto_instance', 'domain_instance', 'fd', 'llm_correction', 'llm_master'],
         "classification_model": "ABC",
-        "vicinity_orders": [1, 2],
-        "vicinity_feature_generator": "pdep",
+        "vicinity_orders": [1],
+        "vicinity_feature_generator": "naive",
         "n_rows": 1000,
         "n_best_pdeps": 3,
         "synth_cleaning_threshold": 0.9,
         "test_synth_data_direction": "user_data",
         "pdep_features": ['pr'],
-        "fd_feature": "pr",
+        "fd_feature": "gpdep",
         },
         runs=3
     )
@@ -189,7 +205,7 @@ def main():
 
     i = 0
     for i, config in enumerate(configs):
-        generat_job(config, experiment_name, jobs_path)
+        generat_job(config, experiment_name, jobs_path, i)
 
     print(f'Generated {i} jobs and stored them to {jobs_path}/.')
 
