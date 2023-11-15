@@ -1,6 +1,5 @@
 import json
 import itertools
-import random
 from pathlib import Path
 
 def combine_configs(ranges: dict, config: dict, runs: int):
@@ -31,7 +30,7 @@ def combine_configs(ranges: dict, config: dict, runs: int):
 
     return configs
 
-def generat_job(config: dict, experiment_name: str, jobs_path: Path, id: int):
+def generate_job(config: dict, experiment_name: str, jobs_path: Path, id: int):
     """
     Generates a kubernetes job config to run a mirmir experiment.
     """
@@ -88,16 +87,18 @@ spec:
         f.write(job_config)
 
 def main():
-    experiment_name = "2023-11-15-phodi-features"
+    experiment_name = "2023-11-15-phodi-vs-vicinity"
 
     baran_configs = combine_configs(
         ranges={
         "dataset": ["beers", "flights", "hospital", "rayyan"],
         "feature_generators": [
             ['auto_instance', 'domain_instance', 'fd', 'llm_correction', 'llm_master'],
-            ['fd']
+            ['fd'],
+            ['auto_instance', 'domain_instance', 'vicinity', 'llm_correction', 'llm_master'],
+            ['vicinity'],
+
         ],
-        "fd_feature": ['pr', 'pdep', 'gpdep', 'epdep'],
         },
         config={
         "dataset": "1481",
@@ -119,6 +120,7 @@ def main():
         "test_synth_data_direction": "user_data",
         "pdep_features": ['pr'],
         "fd_feature": "gpdep",
+        "value_model_threshold": 0.01,
         },
         runs=3
     )
@@ -129,9 +131,11 @@ def main():
         "error_fraction": [1, 3],
         "feature_generators": [
             ['auto_instance', 'domain_instance', 'fd', 'llm_correction', 'llm_master'],
-            ['fd']
+            ['fd'],
+            ['auto_instance', 'domain_instance', 'vicinity', 'llm_correction', 'llm_master'],
+            ['vicinity'],
+
         ],
-        "fd_feature": ['pr', 'pdep', 'gpdep', 'epdep'],
         },
         config={
         "dataset": "1481",
@@ -153,6 +157,7 @@ def main():
         "test_synth_data_direction": "user_data",
         "pdep_features": ['pr'],
         "fd_feature": "gpdep",
+        "value_model_threshold": 0.01,
         },
         runs=3
     )
@@ -164,9 +169,11 @@ def main():
         "error_class": ["simple_mcar", "imputer_simple_mcar"],
         "feature_generators": [
             ['auto_instance', 'domain_instance', 'fd', 'llm_correction', 'llm_master'],
-            ['fd']
+            ['fd'],
+            ['auto_instance', 'domain_instance', 'vicinity', 'llm_correction', 'llm_master'],
+            ['vicinity'],
+
         ],
-        "fd_feature": ['pr', 'pdep', 'gpdep', 'epdep'],
         },
         config={
         "dataset": "1481",
@@ -188,6 +195,7 @@ def main():
         "test_synth_data_direction": "user_data",
         "pdep_features": ['pr'],
         "fd_feature": "gpdep",
+        "value_model_threshold": 0.01,
         },
         runs=3
     )
@@ -205,7 +213,7 @@ def main():
 
     i = 0
     for i, config in enumerate(configs):
-        generat_job(config, experiment_name, jobs_path, i)
+        generate_job(config, experiment_name, jobs_path, i)
 
     print(f'Generated {i} jobs and stored them to {jobs_path}/.')
 

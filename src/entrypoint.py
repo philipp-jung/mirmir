@@ -1,6 +1,5 @@
 import os
 import json
-from pathlib import Path
 
 import dotenv
 import dataset
@@ -33,7 +32,8 @@ def run_mirmir(c: dict):
             c["test_synth_data_direction"],
             c["pdep_features"],
             c["gpdep_threshold"],
-            c['fd_feature']
+            c['fd_feature'],
+            c['value_model_threshold'],
         )
         app.VERBOSE = False
         seed = None
