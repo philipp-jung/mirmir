@@ -120,7 +120,7 @@ def main():
         "test_synth_data_direction": "user_data",
         "pdep_features": ['pr'],
         "fd_feature": "gpdep",
-        "value_model_threshold": 0.01,
+        "domain_model_threshold": 0.01,
         },
         runs=3
     )
@@ -157,7 +157,7 @@ def main():
         "test_synth_data_direction": "user_data",
         "pdep_features": ['pr'],
         "fd_feature": "gpdep",
-        "value_model_threshold": 0.01,
+        "domain_model_threshold": 0.01,
         },
         runs=3
     )
@@ -195,7 +195,7 @@ def main():
         "test_synth_data_direction": "user_data",
         "pdep_features": ['pr'],
         "fd_feature": "gpdep",
-        "value_model_threshold": 0.01,
+        "domain_model_threshold": 0.01,
         },
         runs=3
     )

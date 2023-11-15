@@ -41,7 +41,7 @@ class Cleaning:
                  n_best_pdeps: int, training_time_limit: int,
                  synth_tuples: int, synth_cleaning_threshold: float,
                  test_synth_data_direction: str, pdep_features: Tuple[str], gpdep_threshold: float, fd_feature: str,
-                 value_model_threshold: float):
+                 domain_model_threshold: float):
         """
         Parameters of the cleaning experiment.
         @param labeling_budget: How many tuples are labeled by the user. In the Baran publication, 20  labels are frequently used.
@@ -75,7 +75,7 @@ class Cleaning:
         dependency.
         @param gpdep_threshold: Threshold a suggestion's gpdep score must pass before it is used to generate a feature.
         @param fd_feature: Feature used by the the fd_instance imputer to make cleaning suggestions. Choose from ('gpdep', 'pdep', 'fd').
-        @param value_model_threshold: If a value model's correction suggestion's pr is smaller than the threshold, it is discarded.
+        @param domain_model_threshold: If a value model's correction suggestion's pr is smaller than the threshold, it is discarded.
         """
 
         # Philipps changes
@@ -94,7 +94,7 @@ class Cleaning:
         self.PDEP_FEATURES = pdep_features
         self.GPDEP_THRESHOLD = gpdep_threshold
         self.FD_FEATURE = fd_feature
-        self.VALUE_MODEL_THRESHOLD = value_model_threshold
+        self.DOMAIN_MODEL_THRESHOLD = domain_model_threshold
 
         # TODO check if these are necessary
         self.IGNORE_SIGN = "<<<IGNORE_THIS_VALUE>>>"
@@ -152,7 +152,7 @@ class Cleaning:
             for new_value in model[ed["column"]]:
                 pr = model[ed["column"]][new_value] / sum_scores
                 results_dictionary[new_value] = pr
-                if pr >= self.VALUE_MODEL_THRESHOLD:
+                if pr >= self.DOMAIN_MODEL_THRESHOLD:
                     results_dictionary[new_value] = pr
         return results_dictionary
 
@@ -787,7 +787,7 @@ if __name__ == "__main__":
     vicinity_feature_generator = "naive"
     pdep_features = ['pr']
     test_synth_data_direction = 'user_data'
-    value_model_threshold = 0.01
+    domain_model_threshold = 0.01
 
     # Set this parameter to keep runtimes low when debugging
     data = dataset.Dataset(dataset_name, error_fraction, version, error_class, n_rows)
@@ -796,7 +796,7 @@ if __name__ == "__main__":
     app = Cleaning(labeling_budget, classification_model, clean_with_user_input, feature_generators, vicinity_orders,
                      vicinity_feature_generator, auto_instance_cache_model, n_best_pdeps, training_time_limit,
                      synth_tuples, synth_cleaning_threshold, test_synth_data_direction, pdep_features, gpdep_threshold,
-                     fd_feature, value_model_threshold)
+                     fd_feature, domain_model_threshold)
     app.VERBOSE = True
     seed = 0
     correction_dictionary = app.run(data, seed)

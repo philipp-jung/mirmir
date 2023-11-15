@@ -33,7 +33,7 @@ def run_mirmir(c: dict):
             c["pdep_features"],
             c["gpdep_threshold"],
             c['fd_feature'],
-            c['value_model_threshold'],
+            c['domain_model_threshold'],
         )
         app.VERBOSE = False
         seed = None
