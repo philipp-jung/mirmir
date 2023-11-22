@@ -87,18 +87,12 @@ spec:
         f.write(job_config)
 
 def main():
-    experiment_name = "2023-11-15-phodi-vs-vicinity"
+    experiment_name = "2023-11-22-normalize-gpdep"
 
     baran_configs = combine_configs(
         ranges={
         "dataset": ["beers", "flights", "hospital", "rayyan"],
-        "feature_generators": [
-            ['auto_instance', 'domain_instance', 'fd', 'llm_correction', 'llm_master'],
-            ['fd'],
-            ['auto_instance', 'domain_instance', 'vicinity', 'llm_correction', 'llm_master'],
-            ['vicinity'],
-
-        ],
+        "fd_feature": ["gpdep", "norm_gpdep"],
         },
         config={
         "dataset": "1481",
@@ -128,14 +122,8 @@ def main():
     renuver_configs = combine_configs(
         ranges={
         "dataset": ['bridges', 'cars', 'glass', 'restaurant'],
+        "fd_feature": ["gpdep", "norm_gpdep"],
         "error_fraction": [1, 3],
-        "feature_generators": [
-            ['auto_instance', 'domain_instance', 'fd', 'llm_correction', 'llm_master'],
-            ['fd'],
-            ['auto_instance', 'domain_instance', 'vicinity', 'llm_correction', 'llm_master'],
-            ['vicinity'],
-
-        ],
         },
         config={
         "dataset": "1481",
@@ -165,15 +153,9 @@ def main():
     openml_configs = combine_configs(
         ranges={
         "dataset": ["6", "137", "184", "1481", "41027", "43572"],
+        "fd_feature": ["gpdep", "norm_gpdep"],
         "error_fraction": [1, 5],
         "error_class": ["simple_mcar", "imputer_simple_mcar"],
-        "feature_generators": [
-            ['auto_instance', 'domain_instance', 'fd', 'llm_correction', 'llm_master'],
-            ['fd'],
-            ['auto_instance', 'domain_instance', 'vicinity', 'llm_correction', 'llm_master'],
-            ['vicinity'],
-
-        ],
         },
         config={
         "dataset": "1481",

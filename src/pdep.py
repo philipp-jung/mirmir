@@ -6,7 +6,7 @@ from typing import Tuple, List, Dict, Union
 from itertools import combinations
 from collections import namedtuple, defaultdict
 
-PdepTuple = namedtuple("PdepTuple", ["pdep", "gpdep", "epdep"])
+PdepTuple = namedtuple("PdepTuple", ["pdep", "gpdep", "epdep", "norm_gpdep"])
 FDTuple = namedtuple("FDTuple", ["lhs", "rhs"])
 
 
@@ -280,7 +280,7 @@ def gpdep(
 
     if pdep_A_B is not None and epdep_A_B is not None:
         gpdep_A_B = pdep_A_B - epdep_A_B
-        return PdepTuple(pdep_A_B, gpdep_A_B, epdep_A_B)
+        return PdepTuple(pdep_A_B, gpdep_A_B, epdep_A_B, 0)
     return None
 
 
@@ -408,11 +408,12 @@ def fd_based_corrector(
                      "pr": pr,
                      "pdep": pdep_tuple.pdep if pdep_tuple is not None else 0,
                      "gpdep": pdep_tuple.gpdep if pdep_tuple is not None else 0,
-                     "epdep": pdep_tuple.epdep if pdep_tuple is not None else 0}
+                     "epdep": pdep_tuple.epdep if pdep_tuple is not None else 0,
+                     "norm_gpdep": pdep_tuple.norm_gpdep if pdep_tuple is not None else 0}
                 )
 
     # sort by gpdep for importance
-    sorted_results = sorted(results_list, key=lambda x: x['gpdep'], reverse=True)
+    sorted_results = sorted(results_list, key=lambda x: x['norm_gpdep'], reverse=True)
 
     highest_conditional_probabilities = {}
 

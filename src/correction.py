@@ -534,6 +534,17 @@ class Cleaning:
                         d.fd_inverted_gpdeps[rhs] = {}
                     d.fd_inverted_gpdeps[rhs][lhs] = gpdeps[lhs][rhs]
 
+            # normalize gpdeps per rhs
+            for rhs in d.fd_inverted_gpdeps:
+                norm_sum = sum([t.gpdep for lhs, t in d.fd_inverted_gpdeps[rhs].items()])
+                if norm_sum > 0:
+                    for lhs, pdep_tuple in d.fd_inverted_gpdeps[rhs].items():
+                        d.fd_inverted_gpdeps[rhs][lhs] = pdep.PdepTuple(pdep_tuple.pdep,
+                                                                        pdep_tuple.gpdep,
+                                                                        pdep_tuple.epdep,
+                                                                        pdep_tuple.gpdep / norm_sum)
+                
+
 
         if 'auto_instance' in self.FEATURE_GENERATORS and len(d.labeled_tuples) == self.LABELING_BUDGET:
             # simulate user input by reading labeled data from the typed dataframe
@@ -778,9 +789,9 @@ if __name__ == "__main__":
     gpdep_threshold = 0.3
     training_time_limit = 30
     #feature_generators = ['auto_instance', 'domain_instance', 'fd', 'llm_correction', 'llm_master']
-    feature_generators = ['domain_instance']
+    feature_generators = ['fd']
     classification_model = "ABC"
-    fd_feature = 'gpdep'
+    fd_feature = 'norm_gpdep'
     vicinity_orders = [1]
     n_best_pdeps = 3
     n_rows = None
