@@ -417,12 +417,18 @@ def fd_based_corrector(
 
     highest_conditional_probabilities = {}
 
-    # Having a sorted dict allows us to only return the highest conditional
-    # probability per correction by iterating over all generated corrections
-    # like this.
-    for d in sorted_results:
-        if highest_conditional_probabilities.get(d["correction"]) is None:
-            highest_conditional_probabilities[d["correction"]] = d[feature]
+    if feature == "norm_gpdep":
+        # We can simply sum up the normalized gpdep score
+        for d in sorted_results:
+            old_pr = highest_conditional_probabilities.get(d["correction"], 0)
+            highest_conditional_probabilities[d["correction"]] = old_pr + d[feature]
+    else:
+        # Having a sorted dict allows us to only return the highest conditional
+        # probability per correction by iterating over all generated corrections
+        # like this.
+        for d in sorted_results:
+            if highest_conditional_probabilities.get(d["correction"]) is None:
+                highest_conditional_probabilities[d["correction"]] = d[feature]
 
     return highest_conditional_probabilities
 
