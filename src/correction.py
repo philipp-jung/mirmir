@@ -536,15 +536,17 @@ class Cleaning:
 
             # normalize gpdeps per rhs
             for rhs in d.fd_inverted_gpdeps:
-                norm_sum = sum([t.gpdep for lhs, t in d.fd_inverted_gpdeps[rhs].items()])
+                norm_sum = 0
+                for lhs, pdep_tuple in d.fd_inverted_gpdeps[rhs].items():
+                    if pdep_tuple is not None:
+                        norm_sum += pdep_tuple.gpdep
                 if norm_sum > 0:
                     for lhs, pdep_tuple in d.fd_inverted_gpdeps[rhs].items():
-                        d.fd_inverted_gpdeps[rhs][lhs] = pdep.PdepTuple(pdep_tuple.pdep,
-                                                                        pdep_tuple.gpdep,
-                                                                        pdep_tuple.epdep,
-                                                                        pdep_tuple.gpdep / norm_sum)
-                
-
+                        if pdep_tuple is not None:
+                            d.fd_inverted_gpdeps[rhs][lhs] = pdep.PdepTuple(pdep_tuple.pdep,
+                                                                            pdep_tuple.gpdep,
+                                                                            pdep_tuple.epdep,
+                                                                            pdep_tuple.gpdep / norm_sum)
 
         if 'auto_instance' in self.FEATURE_GENERATORS and len(d.labeled_tuples) == self.LABELING_BUDGET:
             # simulate user input by reading labeled data from the typed dataframe
@@ -776,7 +778,7 @@ class Cleaning:
 if __name__ == "__main__":
     # configure Cleaning object
 
-    dataset_name = "flights"
+    dataset_name = "cars"
     error_class = 'simple_mcar'
     error_fraction = 5
     version = 1
