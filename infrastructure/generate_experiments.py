@@ -87,7 +87,7 @@ spec:
         f.write(job_config)
 
 def main():
-    experiment_name = "2023-11-22-normalize-gpdep"
+    experiment_name = "2023-11-23-sum-normalize-gpdep"
 
     baran_configs = combine_configs(
         ranges={
