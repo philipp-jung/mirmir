@@ -1,15 +1,4 @@
 ########################################
-# Dataset
-# Mohammad Mahdavi
-# moh.mahdavi.l@gmail.com
-# October 2017
-# Big Data Management Group
-# TU Berlin
-# All Rights Reserved
-########################################
-
-
-########################################
 import os
 import re
 import html
@@ -67,8 +56,6 @@ class Dataset:
             self.clean_path = f"../datasets/{dataset_name}/clean.csv"
             self.parquet_path = self.path  # no parquet file is available.
             self.typed_clean_path = self.clean_path  # no parquet file is available.
-
-            # Baran datasets do not have these parameters. Important to remove them for LLM caching.
             self.name = dataset_name
 
         elif dataset_name in renuver_dataset_ids:
@@ -139,23 +126,10 @@ class Dataset:
 
 
     @staticmethod
-    def value_normalizer(value):
-        """
-        This method takes a value and minimally normalizes it.
-        """
-        value = html.unescape(value)
-        value = re.sub("[\t\n ]+", " ", value, re.UNICODE)
-        value = value.strip("\t\n ")
-        return value
-
-    @staticmethod
     def read_parquet_dataset(dataset_path: Union[str, None]):
         """
         This method reads a dataset from a parquet file path. This is nice for the imputer because
         parquet preserves dtypes.
-
-        I did not figure out how to apply the value_normalizer function to solely non-numerical
-        columns. Hope this still works!
         """
         if dataset_path is None:
             return None
@@ -167,7 +141,7 @@ class Dataset:
         This method reads a dataset from a csv file path.
         """
         dataframe = pd.read_csv(dataset_path, sep=",", header="infer", encoding="utf-8", dtype=str,
-                                    keep_default_na=False, low_memory=False).applymap(self.value_normalizer)
+                                    keep_default_na=False, low_memory=False)
         return dataframe
 
     @staticmethod
@@ -199,7 +173,7 @@ class Dataset:
         """
         self.repaired_dataframe = self.dataframe.copy()
         for cell in correction_dictionary:
-            self.repaired_dataframe.iloc[cell] = self.value_normalizer(correction_dictionary[cell])
+            self.repaired_dataframe.iloc[cell] = correction_dictionary[cell]
 
     def get_df_from_labeled_tuples(self):
         """

@@ -778,10 +778,11 @@ class Cleaning:
 if __name__ == "__main__":
     # configure Cleaning object
 
-    dataset_name = "cars"
-    error_class = 'simple_mcar'
+    dataset_name = "184"
+    error_class = 'imputer_simple_mcar'
     error_fraction = 5
     version = 1
+    n_rows = 1000
 
     labeling_budget = 20
     synth_tuples = 100
@@ -790,13 +791,11 @@ if __name__ == "__main__":
     clean_with_user_input = True  # Careful: If set to False, d.corrected_cells will remain empty.
     gpdep_threshold = 0.3
     training_time_limit = 30
-    #feature_generators = ['auto_instance', 'domain_instance', 'fd', 'llm_correction', 'llm_master']
-    feature_generators = ['fd']
+    feature_generators = ['auto_instance', 'domain_instance', 'fd', 'llm_correction', 'llm_master']
     classification_model = "ABC"
     fd_feature = 'norm_gpdep'
     vicinity_orders = [1]
     n_best_pdeps = 3
-    n_rows = None
     vicinity_feature_generator = "naive"
     pdep_features = ['pr']
     test_synth_data_direction = 'user_data'
