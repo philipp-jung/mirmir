@@ -17,7 +17,9 @@ def main():
     # glass does run into a timeout
     #renuver_dataset_ids = ["bridges", "cars", "glass", "restaurant"]
     renuver_dataset_ids = ["bridges", "cars", "restaurant"]
-    openml_dataset_ids = ["1481", "184", "41027", ]
+
+    # cannot mine DCs for 6, 137 _has not DCs_
+    openml_dataset_ids = ["151", "184", "1481", "41027", "43572",]
 
     for dataset_name in openml_dataset_ids:
         for error_class in ['imputer_simple_mcar', 'simple_mcar']:

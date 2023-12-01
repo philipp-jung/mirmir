@@ -12,7 +12,7 @@ def export_table(name: str, path: str, n_rows=None):
 def main():
     baran_dataset_ids = ["beers", "flights", "hospital", "rayyan", "toy",]
     renuver_dataset_ids = ["bridges", "cars", "glass", "restaurant"]
-    openml_dataset_ids = ["6", "137", "184", "1481", "41027", "43572"]
+    openml_dataset_ids = ["6", "137", "151", "184", "1481", "41027", "43572"]
 
     for dataset_name in renuver_dataset_ids:
         agg_name = f'{dataset_name}'
