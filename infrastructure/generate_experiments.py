@@ -1,3 +1,5 @@
+import argparse
+import yaml
 import json
 import itertools
 from pathlib import Path
@@ -86,7 +88,45 @@ spec:
     with open(jobs_path / f'{unique_id}.yml', 'wt') as f:
         f.write(job_config)
 
-def main():
+def load_experiment(saved_config: str):
+    """
+    Load experiment config from a .yaml file in the saved_experiment_configs folder.
+    """
+    config_path = Path('saved-experiment-configs') / f'{saved_config}.yaml'
+    with open(config_path, 'rt') as f:
+        config = yaml.safe_load(f)
+
+    experiment_name = config['experiment_name']
+    baran_configs = combine_configs(ranges=config['ranges_baran'],
+                                    config=config['config_baran'],
+                                    runs=config['runs'])
+    renuver_configs = combine_configs(ranges=config['ranges_renuver'],
+                                      config=config['config_renuver'],
+                                      runs=config['runs'])
+    openml_configs = combine_configs(ranges=config['ranges_openml'],
+                                     config=config['config_openml'],
+                                     runs=config['runs'])
+
+    print(f'Successfully loaded experiment configuration from {saved_config}.')
+
+    # merge configs
+    configs = [*baran_configs, *renuver_configs, *openml_configs]
+
+    jobs_path = Path('jobs/')
+    jobs_path.mkdir(parents=True, exist_ok=True)
+
+    # delete files in jobs/ directory
+    for file_path in jobs_path.iterdir():
+        if file_path.is_file():
+            file_path.unlink()
+
+    i = 0
+    for i, config in enumerate(configs):
+        generate_job(config, experiment_name, jobs_path, i)
+
+    print(f'Generated {i} jobs and stored them to {jobs_path}/.')
+
+def manual_experiment():
     experiment_name = "2023-11-23-sum-normalize-gpdep"
 
     baran_configs = combine_configs(
@@ -201,4 +241,14 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description='Generate k8s job configs, '
+                                     'either from a saved file via the -f flag, '
+                                     'or manually configured from within the script.')
+
+    parser.add_argument('--from_saved_config', '-f', type=str, default='',
+                        help='Name of the yaml file of the saved config.')
+    saved_config = parser.parse_args().from_saved_config
+    if saved_config == '':
+      manual_experiment()
+    else:
+      load_experiment(saved_config)
