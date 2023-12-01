@@ -27,7 +27,7 @@ def create_tables_for_dataset(name: str, path: str, path_dirty: str, n_rows=None
 def main():
     baran_dataset_ids = ["beers", "flights", "hospital", "rayyan"]
     renuver_dataset_ids = ["bridges", "cars", "glass", "restaurant"]
-    openml_dataset_ids = ["6", "137", "184", "1481", "41027", "43572"]
+    openml_dataset_ids = ["6", "137", "151", "184", "1481", "41027", "43572"]
 
     for dataset_name in renuver_dataset_ids:
         for version in range(1, 6):
