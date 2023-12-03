@@ -18,8 +18,8 @@ def main():
     #renuver_dataset_ids = ["bridges", "cars", "glass", "restaurant"]
     renuver_dataset_ids = ["bridges", "cars", "restaurant"]
 
-    # cannot mine DCs for 6, 137 _has not DCs_
-    openml_dataset_ids = ["151", "184", "1481", "41027", "43572",]
+    # cannot mine DCs for 6, 137 _has not DCs_, 43572 out of Memory 
+    openml_dataset_ids = ["151", "184", "1481", "41027",]
 
     for dataset_name in openml_dataset_ids:
         for error_class in ['imputer_simple_mcar', 'simple_mcar']:

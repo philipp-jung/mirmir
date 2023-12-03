@@ -92,7 +92,7 @@ def export_datasets(export_path: str):
     e = ExportDataset(export_path)
     baran_dataset_ids = ["beers", "flights", "hospital", "rayyan"]
     renuver_dataset_ids = ["bridges", "cars", "glass", "restaurant"]
-    openml_dataset_ids = ["6", "137", "184", "1481", "43572"]
+    openml_dataset_ids = ["6", "137", "151", "184", "1481", "43572"]
 
     for dataset_name in renuver_dataset_ids:
         clean_path = f"../../datasets/renuver/{dataset_name}/clean.csv"
