@@ -7,6 +7,11 @@ ranges_baran:
     - hospital
     - rayyan
   feature_generators:
+    - - auto_instance
+      - domain_instance
+      - fd
+      - llm_correction
+      - llm_master
     - - domain_instance
       - fd
       - llm_correction
