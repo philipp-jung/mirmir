@@ -8,6 +8,7 @@
 
 import os
 import math
+import json
 import pickle
 import random
 import multiprocessing
@@ -41,7 +42,7 @@ class Cleaning:
                  n_best_pdeps: int, training_time_limit: int,
                  synth_tuples: int, synth_cleaning_threshold: float,
                  test_synth_data_direction: str, pdep_features: Tuple[str], gpdep_threshold: float, fd_feature: str,
-                 domain_model_threshold: float):
+                 domain_model_threshold: float, dataset_analysis: bool = False):
         """
         Parameters of the cleaning experiment.
         @param labeling_budget: How many tuples are labeled by the user. In the Baran publication, 20  labels are frequently used.
@@ -76,6 +77,7 @@ class Cleaning:
         @param gpdep_threshold: Threshold a suggestion's gpdep score must pass before it is used to generate a feature.
         @param fd_feature: Feature used by the the fd_instance imputer to make cleaning suggestions. Choose from ('gpdep', 'pdep', 'fd').
         @param domain_model_threshold: If a value model's correction suggestion's pr is smaller than the threshold, it is discarded.
+        @param dataset_analysis: Write a detailed analysis of how Mirmir cleans a a dataset to a .json file.
         """
 
         # Philipps changes
@@ -95,6 +97,7 @@ class Cleaning:
         self.GPDEP_THRESHOLD = gpdep_threshold
         self.FD_FEATURE = fd_feature
         self.DOMAIN_MODEL_THRESHOLD = domain_model_threshold
+        self.DATASET_ANALYSIS = dataset_analysis
 
         # TODO check if these are necessary
         self.IGNORE_SIGN = "<<<IGNORE_THIS_VALUE>>>"
@@ -657,9 +660,6 @@ class Cleaning:
         pair_features = d.corrections.assemble_pair_features()
         synth_pair_features = d.synth_corrections.assemble_pair_features()
 
-        if self.LABELING_BUDGET == len(d.labeled_tuples):
-            a = 1
-
         for j in column_errors:
             if d.corrections.value_cleaning_pct(column_errors[j]) > 0.3:
                 # disable synth tuples if strong value cleaning suggestions exist.
@@ -693,10 +693,13 @@ class Cleaning:
 
             is_valid_problem, predicted_labels = ml_helpers.handle_edge_cases(x_train, x_test, y_train, d.labeled_tuples)
 
+            if self.LABELING_BUDGET == len(d.labeled_tuples) and j == 5:
+                a = 1
+
             if is_valid_problem:
                 if self.CLASSIFICATION_MODEL == "ABC" or sum(y_train) <= 2:
                     gs_clf = sklearn.ensemble.AdaBoostClassifier(n_estimators=100)
-                    gs_clf.fit(x_train, y_train)
+                    gs_clf.fit(x_train, y_train, )
                 elif self.CLASSIFICATION_MODEL == "CV":
                     gs_clf = hpo.cross_validated_estimator(x_train, y_train)
                 else:
@@ -705,6 +708,27 @@ class Cleaning:
                 predicted_labels = gs_clf.predict(x_test)
 
             ml_helpers.set_binary_cleaning_suggestions(predicted_labels, error_correction_suggestions, d.corrected_cells)
+
+        if self.LABELING_BUDGET == len(d.labeled_tuples) and self.DATASET_ANALYSIS:
+            samples = {c: random.sample(column_errors[c], min(40, len(column_errors[c]))) for c in column_errors}
+            normalized_dataset = d.name
+            normalized_dataset = f'{d.name}_{d.error_class}_{d.error_fraction}'
+
+            analysis = {
+                    'dataset': normalized_dataset,
+                    'error_stats': [{'column': c, 'errors': len(e)} for c,e in column_errors.items()],
+                    'samples': [{'column': col, 'cell': c, 'error': d.dataframe.iloc[c], 'correction': d.clean_dataframe.iloc[c], 'correction_suggestion': d.corrected_cells.get(c, 'no corrections suggested')}
+                                    for col in samples for c in samples[col]],
+                    'correctors': [{'corrector': cor,
+                                    'column': col,
+                                    'cell': c,
+                                    'error': d.dataframe.iloc[c],
+                                    'correction': d.clean_dataframe.iloc[c],
+                                    'correction_suggestions': d.corrections.correction_store[cor].get(c)} for cor in d.corrections.correction_store for col in samples for c in samples[col]]
+                }
+
+            with open(f'analysis/{normalized_dataset}.json', 'wt') as f:
+                json.dump(analysis, f)
 
         if self.VERBOSE:
             print("{:.0f}% ({} / {}) of data errors are corrected.".format(
@@ -776,9 +800,10 @@ class Cleaning:
 
 
 if __name__ == "__main__":
-    # configure Cleaning object
+    # store results for analysis
+    dataset_analysis = True
 
-    dataset_name = "184"
+    dataset_name = "151"
     error_class = 'imputer_simple_mcar'
     error_fraction = 5
     version = 1
@@ -791,7 +816,8 @@ if __name__ == "__main__":
     clean_with_user_input = True  # Careful: If set to False, d.corrected_cells will remain empty.
     gpdep_threshold = 0.3
     training_time_limit = 30
-    feature_generators = ['auto_instance', 'domain_instance', 'fd', 'llm_correction', 'llm_master']
+    #feature_generators = ['auto_instance', 'domain_instance', 'fd', 'llm_correction', 'llm_master']
+    feature_generators = ['auto_instance']
     classification_model = "ABC"
     fd_feature = 'norm_gpdep'
     vicinity_orders = [1]
@@ -808,7 +834,7 @@ if __name__ == "__main__":
     app = Cleaning(labeling_budget, classification_model, clean_with_user_input, feature_generators, vicinity_orders,
                      vicinity_feature_generator, auto_instance_cache_model, n_best_pdeps, training_time_limit,
                      synth_tuples, synth_cleaning_threshold, test_synth_data_direction, pdep_features, gpdep_threshold,
-                     fd_feature, domain_model_threshold)
+                     fd_feature, domain_model_threshold, dataset_analysis)
     app.VERBOSE = True
     seed = 0
     correction_dictionary = app.run(data, seed)

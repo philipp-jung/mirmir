@@ -89,6 +89,9 @@ class Corrections:
         for mi, model in enumerate(flat_corrections):
             for cell in flat_corrections[model]:
                 for correction, pr in flat_corrections[model][cell].items():
+                    # interessanter gedanke:
+                    # if df_dirty.iloc[cell] == missing_value_token and model == 'llm_value':
+                    #   pass
                     if correction not in pair_features[cell]:
                         features = list(flat_corrections.keys())
                         pair_features[cell][correction] = np.zeros(len(features))

@@ -2,7 +2,6 @@
 AutoGluon Imputer
 Imputes missing values in tables based on autogluon-tabular. A convenience wrapper around AutoGluon.
 """
-import os
 import random
 import pickle
 import inspect
@@ -75,7 +74,7 @@ class AutoGluonImputer():
 
     @property
     def ag_model_path(self) -> Path:
-        return self.output_path / Path('agModels/self.model_name')
+        return self.output_path / Path(f'agModels/{self.model_name}')
 
     def fit(self,
             train_df: pd.DataFrame,
@@ -108,7 +107,7 @@ class AutoGluonImputer():
             time_limit=time_limit,
             calibrate=True,
             verbosity=self.verbosity,
-            num_cpus="25")
+            num_cpus=25)  # funny: num_cpus expects a string, and if you pass a string AG crashes.
 
         return self
 

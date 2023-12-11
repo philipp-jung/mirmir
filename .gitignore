@@ -19,3 +19,6 @@ HyFDMimir/
 
 # infra
 infrastructure/jobs/
+
+# in-detail analysis 
+src/analysis/
