@@ -141,7 +141,8 @@ class Cleaning:
         se_probas = df_probas.iloc[ed['row']]  # select error position
         prob_d = {key: se_probas.to_dict()[key] for key in se_probas.to_dict()}
 
-        result = {correction: pr for correction, pr in prob_d.items() if correction != ed['old_value']}
+        # sometimes autogluon returns np.nan, which the ensemble classifier downstream chokes up on.
+        result = {correction: 0.0 if np.isnan(pr) else pr for correction, pr in prob_d.items() if correction != ed['old_value']}
         return result
 
     def _domain_based_corrector(self, model, ed):
@@ -803,11 +804,11 @@ if __name__ == "__main__":
     # store results for analysis
     dataset_analysis = True
 
-    dataset_name = "151"
-    error_class = 'imputer_simple_mcar'
-    error_fraction = 5
+    dataset_name = "bridges"
+    error_class = 'simple_mcar'
+    error_fraction = 3
     version = 1
-    n_rows = 1000
+    n_rows = None
 
     labeling_budget = 20
     synth_tuples = 100
