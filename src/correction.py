@@ -11,6 +11,8 @@ import math
 import json
 import pickle
 import random
+import difflib
+import unicodedata
 import multiprocessing
 from itertools import combinations
 
@@ -98,13 +100,13 @@ class Cleaning:
         self.FD_FEATURE = fd_feature
         self.DOMAIN_MODEL_THRESHOLD = domain_model_threshold
         self.DATASET_ANALYSIS = dataset_analysis
+        self.MAX_VALUE_LENGTH = 50
+        self.LABELING_BUDGET = labeling_budget
 
         # TODO check if these are necessary
         self.IGNORE_SIGN = "<<<IGNORE_THIS_VALUE>>>"
         self.VERBOSE = False
         self.SAVE_RESULTS = False
-        self.LABELING_BUDGET = labeling_budget
-        self.MAX_VALUE_LENGTH = 50
 
         # variable for debugging CV
         self.sampled_tuples = 0
@@ -120,11 +122,47 @@ class Cleaning:
             model[key][value] = 0.0
         model[key][value] += 1.0
 
+    @staticmethod
+    def _value_encoder(value, encoding):
+        """
+        This method represents a value with a specified value abstraction encoding method.
+        """
+        if encoding == "identity":
+            return json.dumps(list(value))
+        if encoding == "unicode":
+            return json.dumps([unicodedata.category(c) for c in value])
+
     def _domain_based_model_updater(self, model, ud):
         """
         This method updates the domain_instance-based error corrector model with a given update dictionary.
         """
         self._to_model_adder(model, ud["column"], ud["new_value"])
+
+    def _value_based_models_updater(self, models, ud):
+        """
+        This method updates the value-based error corrector models with a given update dictionary.
+        """
+        remover_transformation = {}
+        adder_transformation = {}
+        replacer_transformation = {}
+        s = difflib.SequenceMatcher(None, ud["old_value"], ud["new_value"])
+        for tag, i1, i2, j1, j2 in s.get_opcodes():
+            index_range = json.dumps([i1, i2])
+            if tag == "delete":
+                remover_transformation[index_range] = ""
+            if tag == "insert":
+                adder_transformation[index_range] = ud["new_value"][j1:j2]
+            if tag == "replace":
+                replacer_transformation[index_range] = ud["new_value"][j1:j2]
+        for encoding in ["identity", "unicode"]:
+            encoded_old_value = self._value_encoder(ud["old_value"], encoding)
+            if remover_transformation:
+                self._to_model_adder(models[0], encoded_old_value, json.dumps(remover_transformation))
+            if adder_transformation:
+                self._to_model_adder(models[1], encoded_old_value, json.dumps(adder_transformation))
+            if replacer_transformation:
+                self._to_model_adder(models[2], encoded_old_value, json.dumps(replacer_transformation))
+            self._to_model_adder(models[3], encoded_old_value, ud["new_value"])
 
     def _imputer_based_corrector(self, model: Dict[int, pd.DataFrame], ed: dict) -> Dict[str, float]:
         """
@@ -144,6 +182,43 @@ class Cleaning:
         # sometimes autogluon returns np.nan, which the ensemble classifier downstream chokes up on.
         result = {correction: 0.0 if np.isnan(pr) else pr for correction, pr in prob_d.items() if correction != ed['old_value']}
         return result
+
+    def _value_based_corrector(self, models, ed):
+        """
+        This method takes the value-based models and an error dictionary to generate potential value-based corrections.
+        """
+        results = {'remover': [], 'adder': [], 'replacer': [], 'swapper': []}
+        for m, model_name in enumerate(["remover", "adder", "replacer", "swapper"]):
+            model = models[m]
+            for encoding in ["identity", "unicode"]:
+                results_dictionary = {}
+                encoded_value_string = self._value_encoder(ed["old_value"], encoding)
+                if encoded_value_string in model:
+                    sum_scores = sum(model[encoded_value_string].values())
+                    if model_name in ["remover", "adder", "replacer"]:
+                        for transformation_string in model[encoded_value_string]:
+                            index_character_dictionary = {i: c for i, c in enumerate(ed["old_value"])}
+                            transformation = json.loads(transformation_string)
+                            for change_range_string in transformation:
+                                change_range = json.loads(change_range_string)
+                                if model_name in ["remover", "replacer"]:
+                                    for i in range(change_range[0], change_range[1]):
+                                        index_character_dictionary[i] = ""
+                                if model_name in ["adder", "replacer"]:
+                                    ov = "" if change_range[0] not in index_character_dictionary else \
+                                        index_character_dictionary[change_range[0]]
+                                    index_character_dictionary[change_range[0]] = transformation[change_range_string] + ov
+                            new_value = ""
+                            for i in range(len(index_character_dictionary)):
+                                new_value += index_character_dictionary[i]
+                            pr = model[encoded_value_string][transformation_string] / sum_scores
+                            results_dictionary[new_value] = pr
+                    if model_name == "swapper":
+                        for new_value in model[encoded_value_string]:
+                            pr = model[encoded_value_string][new_value] / sum_scores
+                            results_dictionary[new_value] = pr
+                results[model_name].append(results_dictionary)
+        return results
 
     def _domain_based_corrector(self, model, ed):
         """
@@ -193,7 +268,6 @@ class Cleaning:
                     update_dictionary = {
                         "column": j,
                         "new_value": value,
-                        "vicinity": temp_vicinity_list
                     }
                     self._domain_based_model_updater(d.domain_models, update_dictionary)
 
@@ -225,12 +299,20 @@ class Cleaning:
                     for o in self.VICINITY_ORDERS:
                         for lhs in combinations(range(cols), o):
                             corrections_features.append(f'vicinity_{o}_{str(lhs)}')
-            corrections_features.append(feature)
+            elif feature == 'value':
+                models = ['remover', 'adder', 'replacer', 'swapper']
+                encodings = ['identity', 'unicode']
+                models_names = [f"value_{m}_{e}" for m in models for e in encodings]
+                corrections_features.extend(models_names)
+            else:
+                corrections_features.append(feature)
 
         d.corrections = helpers.Corrections(corrections_features)
         d.synth_corrections = helpers.Corrections(corrections_features)
 
         d.vicinity_models = {}
+        d.value_models = [{}, {}, {}, {}]
+
         d.lhs_values_frequencies = {}
         if 'vicinity' in self.FEATURE_GENERATORS:
             for o in self.VICINITY_ORDERS:
@@ -334,12 +416,12 @@ class Cleaning:
                 "new_value": cleaned_sampled_tuple[column],
             }
 
-            # if the value in that cell has been labelled an error
-            if d.labeled_cells[cell][0] == 1:
-                # update domain and vicinity models.
-                self._domain_based_model_updater(d.domain_models, update_dictionary)
-                update_dictionary["vicinity"] = [cv if column != cj else self.IGNORE_SIGN
-                                                 for cj, cv in enumerate(cleaned_sampled_tuple)]
+            # if the value in that cell has been labeled an error
+            if d.labeled_cells[cell][0] == 1:  # update domain and value models.
+                if 'domain' in self.FEATURE_GENERATORS:
+                    self._domain_based_model_updater(d.domain_models, update_dictionary)
+                if 'value' in self.FEATURE_GENERATORS:
+                    self._value_based_models_updater(d.value_models, update_dictionary)
 
                 # if the cell hadn't been detected as an error
                 if cell not in d.detected_cells:
@@ -348,10 +430,6 @@ class Cleaning:
                     # war, dass man einen Fehler labelt, der vorher noch nicht
                     # gelabelt war.
                     d.detected_cells[cell] = self.IGNORE_SIGN
-
-            else:
-                update_dictionary["vicinity"] = [cv if column != cj and d.labeled_cells[(d.sampled_tuple, cj)][0] == 1
-                                                 else self.IGNORE_SIGN for cj, cv in enumerate(cleaned_sampled_tuple)]
 
         # BEGIN Philipp's changes
         if 'vicinity' in self.FEATURE_GENERATORS:
@@ -432,7 +510,7 @@ class Cleaning:
             """
             if error_dictionary['old_value'] != '':  # If there is no value to be transformed, skip.
                 error_positions = helpers.ErrorPositions(d.detected_cells, d.dataframe.shape, d.labeled_cells)
-                column_errors_positions = error_positions.original_column_errors().get(error_dictionary['column'])
+                column_errors_positions = error_positions.original_column_errors().get(error_dictionary['column'], [])
                 column_errors_rows = [row for (row, col) in column_errors_positions]
 
                 # Construct pairs of ('error', 'correction') by iterating over the user input.
@@ -483,6 +561,15 @@ class Cleaning:
                 d.synth_corrections.get('domain_instance')[error_cell] = self._domain_based_corrector(d.domain_models, error_dictionary)
             else:
                 d.corrections.get('domain_instance')[error_cell] = self._domain_based_corrector(d.domain_models, error_dictionary)
+
+        if "value" in self.FEATURE_GENERATORS:
+            if not is_synth:
+                value_correction_suggestions = self._value_based_corrector(d.value_models, error_dictionary)
+                if error_cell == (0,4):
+                    a = 1
+                for model_name, encodings_list in value_correction_suggestions.items():
+                    for encoding, correction_suggestions in zip(['identity', 'unicode'], encodings_list):
+                        d.corrections.get(f'value_{model_name}_{encoding}')[error_cell] = correction_suggestions
 
         if "auto_instance" in self.FEATURE_GENERATORS:
             imputer_corrections = self._imputer_based_corrector(d.imputer_models, error_dictionary)
@@ -662,6 +749,9 @@ class Cleaning:
         synth_pair_features = d.synth_corrections.assemble_pair_features()
 
         for j in column_errors:
+            if self.LABELING_BUDGET == len(d.labeled_tuples) and j == 5:
+                a = 1
+
             if d.corrections.value_cleaning_pct(column_errors[j]) > 0.3:
                 # disable synth tuples if strong value cleaning suggestions exist.
                 score = 0
@@ -693,9 +783,6 @@ class Cleaning:
                     j)
 
             is_valid_problem, predicted_labels = ml_helpers.handle_edge_cases(x_train, x_test, y_train, d.labeled_tuples)
-
-            if self.LABELING_BUDGET == len(d.labeled_tuples) and j == 5:
-                a = 1
 
             if is_valid_problem:
                 if self.CLASSIFICATION_MODEL == "ABC" or sum(y_train) <= 2:
@@ -804,7 +891,7 @@ if __name__ == "__main__":
     # store results for analysis
     dataset_analysis = True
 
-    dataset_name = "bridges"
+    dataset_name = "beers"
     error_class = 'simple_mcar'
     error_fraction = 3
     version = 1
@@ -818,7 +905,7 @@ if __name__ == "__main__":
     gpdep_threshold = 0.3
     training_time_limit = 30
     #feature_generators = ['auto_instance', 'domain_instance', 'fd', 'llm_correction', 'llm_master']
-    feature_generators = ['auto_instance']
+    feature_generators = ['llm_correction',]
     classification_model = "ABC"
     fd_feature = 'norm_gpdep'
     vicinity_orders = [1]

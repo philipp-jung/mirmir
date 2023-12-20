@@ -53,7 +53,6 @@ spec:
         - key: nvidia.com/gpu
           operator: Exists
           effect: NoSchedule
-      priorityClassName: unimportant
       containers:
         - name: mirmir
           image: docker.io/larmor27/mirmir:latest
