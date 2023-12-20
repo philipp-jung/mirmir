@@ -8,13 +8,11 @@ ranges_baran:
     - rayyan
   feature_generators:
     - - auto_instance
-      - domain_instance
       - fd
       - llm_correction
       - llm_master
     - - fd
     - - auto_instance
-      - domain_instance
       - vicinity
       - llm_correction
       - llm_master
@@ -57,13 +55,11 @@ ranges_renuver:
     - 3
   feature_generators:
     - - auto_instance
-      - domain_instance
       - fd
       - llm_correction
       - llm_master
     - - fd
     - - auto_instance
-      - domain_instance
       - vicinity
       - llm_correction
       - llm_master
@@ -111,13 +107,11 @@ ranges_openml:
     - "imputer_simple_mcar"
   feature_generators:
     - - auto_instance
-      - domain_instance
       - fd
       - llm_correction
       - llm_master
     - - fd
     - - auto_instance
-      - domain_instance
       - vicinity
       - llm_correction
       - llm_master
