@@ -521,13 +521,14 @@ class Cleaning:
                         error = d.dataframe.iloc[cell]
                         correction = d.labeled_cells[cell][1]
                         if error != '':
+                            if correction == '':  # encode missing value
+                                correction = '<MV>'
                             error_correction_pairs.append((error, correction))
 
                 # Only do llm_correction cleaning if there are >= 3 examples for cleaning that column.
                 if len(error_correction_pairs) >= 3:
                     prompt = "You are a data cleaning machine that detects patterns to return a correction. If you do "\
                              "not find a correction, you return the token <NULL>. You always follow the example.\n---\n"
-                    # hypothesis on rayyan: It is crucial to give enough examples.
                     n_pairs = min(10, len(error_correction_pairs))
                     for (error, correction) in random.sample(error_correction_pairs, n_pairs):
                         prompt = prompt + f"error:{error}" + '\n' + f"correction:{correction}" + '\n'
@@ -893,7 +894,7 @@ if __name__ == "__main__":
 
     dataset_name = "beers"
     error_class = 'simple_mcar'
-    error_fraction = 3
+    error_fraction = 1
     version = 1
     n_rows = None
 
@@ -904,8 +905,8 @@ if __name__ == "__main__":
     clean_with_user_input = True  # Careful: If set to False, d.corrected_cells will remain empty.
     gpdep_threshold = 0.3
     training_time_limit = 30
-    #feature_generators = ['auto_instance', 'domain_instance', 'fd', 'llm_correction', 'llm_master']
-    feature_generators = ['llm_correction',]
+    feature_generators = ['auto_instance', 'fd', 'llm_correction', 'llm_master']
+    # feature_generators = ['llm_correction',]
     classification_model = "ABC"
     fd_feature = 'norm_gpdep'
     vicinity_orders = [1]
