@@ -526,7 +526,7 @@ class Cleaning:
                             error_correction_pairs.append((error, correction))
 
                 # Only do llm_correction cleaning if there are >= 3 examples for cleaning that column.
-                if len(error_correction_pairs) >= 3:
+                if len(error_correction_pairs) >= 2:
                     prompt = "You are a data cleaning machine that detects patterns to return a correction. If you do "\
                              "not find a correction, you return the token <NULL>. You always follow the example.\n---\n"
                     n_pairs = min(10, len(error_correction_pairs))
@@ -892,7 +892,7 @@ if __name__ == "__main__":
     # store results for analysis
     dataset_analysis = True
 
-    dataset_name = "beers"
+    dataset_name = "glass"
     error_class = 'simple_mcar'
     error_fraction = 1
     version = 1
