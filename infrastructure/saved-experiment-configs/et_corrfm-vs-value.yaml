@@ -11,10 +11,10 @@ ranges_baran:
       - fd
       - llm_correction
       - llm_master
-    - - fd
+    - - llm_correction
     - - auto_instance
+      - fd
       - value
-      - llm_correction
       - llm_master
     - - value
 
@@ -58,10 +58,10 @@ ranges_renuver:
       - fd
       - llm_correction
       - llm_master
-    - - fd
+    - - llm_correction
     - - auto_instance
+      - fd
       - value
-      - llm_correction
       - llm_master
     - - value
 
@@ -110,10 +110,10 @@ ranges_openml:
       - fd
       - llm_correction
       - llm_master
-    - - fd
+    - - llm_correction
     - - auto_instance
+      - fd
       - value
-      - llm_correction
       - llm_master
     - - value
 

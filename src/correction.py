@@ -865,7 +865,7 @@ class Cleaning:
 
         ran_without_samples = False
         while len(d.labeled_tuples) < self.LABELING_BUDGET:
-            if self.LABELING_BUDGET == 0 and not ran_without_samples:  # self-supervised
+            if len(d.labeled_tuples) == 0 and not ran_without_samples:  # first run is self-supervised
                 self.prepare_augmented_models(d)
                 self.generate_features(d, synchronous=True)
                 self.generate_synth_features(d, synchronous=True)
@@ -892,7 +892,7 @@ if __name__ == "__main__":
     # store results for analysis
     dataset_analysis = True
 
-    dataset_name = "glass"
+    dataset_name = "flights"
     error_class = 'simple_mcar'
     error_fraction = 1
     version = 1
