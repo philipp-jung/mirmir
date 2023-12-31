@@ -30,25 +30,50 @@ def set_binary_pre_ensembling(predicted_probas: np.ndarray,
 
 
 def set_binary_cleaning_suggestions(predicted_labels: List[int],
-                                    all_error_correction_suggestions: List[Tuple],
+                                    predicted_probas: List[float],
+                                    x_test: List[np.ndarray],
+                                    all_error_correction_suggestions: List[Tuple[Tuple[int, int], str]],
                                     corrected_cells: Dict):
     """
     After the Classifier has done its work, take its outputs and set them as the correction in the global state d.
     If there is user input available for a cell, it always takes precedence over the ML output.
 
-    @param predicted_labels: list of binary classes whether or not a cleaning suggestion has been selected by ensembling.
-    @param all_error_correction_suggestions: list of tuples containing all error corrections, same length as
+    @param predicted_labels: array of binary classes whether or not a cleaning suggestion has been selected by ensembling.
+    @param predicted_probas: array of floats of class probability that (class == 1).
+    @param x_test: array of feature vectors.
+    @param all_error_correction_suggestions: list of tuples (cell, correction) containing all error corrections, same length as
     predicted_labels.
     @param corrected_cells: dictionary {error_cell: predicted_correction} that stores the cleaning results.
     @return: None
     """
+    suggestions = {}
+
     for index, predicted_label in enumerate(predicted_labels):
         if predicted_label:
             error_cell, predicted_correction = all_error_correction_suggestions[index]
-            corrected_cells[error_cell] = predicted_correction
+            if suggestions.get(error_cell) is None:
+                suggestions[error_cell] = []
+            suggestions[error_cell].append({'correction': predicted_correction,
+                                            'probability': predicted_probas[index],
+                                            'features': x_test[index]})
+            
+    for error_cell in suggestions:
+        if len(suggestions[error_cell]) > 1: # multiple suggestions were classified by the correction classifier
+            # take the suggestions that have probabilities that are equal to the highest probability
+            max_prob = max(suggestions[error_cell], key=lambda x: x['probability'])['probability']
+            max_prob_suggestions = [suggestion for suggestion in suggestions[error_cell] if suggestion['probability'] == max_prob]
+            # take the suggestion with the highest
+            if len(max_prob_suggestions) == 1:
+                corrected_cells[error_cell] = max_prob_suggestions[0]['correction']
+            else:
+                # further filter and take random suggestion with the highest sum of features
+                max_sum_suggestion = max(max_prob_suggestions, key=lambda x: sum(x['features']))
+                corrected_cells[error_cell] = max_sum_suggestion['correction']
+        else:
+            corrected_cells[error_cell] = suggestions[error_cell][0]['correction']
 
 
-def handle_edge_cases(x_train, x_test, y_train, labeled_tuples) -> Tuple[bool, List]:
+def handle_edge_cases(x_train, x_test, y_train) -> Tuple[bool, List, List]:
     """
     Depending on the dataset and how much data has been labeled by the user, the data used to formulate the ML problem
     can lead to an invalid ML problem.
@@ -61,23 +86,19 @@ def handle_edge_cases(x_train, x_test, y_train, labeled_tuples) -> Tuple[bool, L
     position is a list of predicted labels. Which is used when the ML problem should not be started.
     """
     if sum(y_train) == 0:  # no correct suggestion was created for any of the error cells.
-        return False, []  # nothing to do, need more user-input to work.
+        return False, [], []  # nothing to do, need more user-input to work.
 
     elif sum(y_train) == len(y_train):  # no incorrect suggestion was created for any of the error cells.
-        return False, np.ones(len(x_test))
-
-    # That's the unsupervised case. Why would that be invalid?
-    # elif len(labeled_tuples) == 0:  # no training data is available because no user labels have been set.
-        # return False, []
+        return False, np.ones(len(x_test)), np.ones(len(x_test))
 
     elif len(x_train) > 0 and len(x_test) == 0:  # len(x_test) == 0 because all rows have been labeled.
-        return False, []  # trivial case - use manually corrected cells to correct all errors.
+        return False, [], []  # trivial case - use manually corrected cells to correct all errors.
 
     elif len(x_train) == 0:
-        return False, []  # nothing to learn because x_train is empty.
+        return False, [], []  # nothing to learn because x_train is empty.
 
     elif len(x_train) > 0 and len(x_test) > 0:
-        return True, []
+        return True, [], []
     else:
         raise ValueError("Invalid state.")
 
@@ -172,7 +193,7 @@ def test_synth_data(d, pair_features, synth_pair_features, classification_model:
         return 1.0  # no user-data available, but synth-data availble: Use that synth data to clean.
 
     score = 0.0
-    is_valid_problem, _ = handle_edge_cases(x_train, synth_x_test, y_train, d.labeled_tuples)
+    is_valid_problem, _, _ = handle_edge_cases(x_train, synth_x_test, y_train)
     if not is_valid_problem:
         return score
 

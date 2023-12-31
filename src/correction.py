@@ -780,8 +780,8 @@ class Cleaning:
                     {},
                     j)
 
-            is_valid_problem, predicted_labels = ml_helpers.handle_edge_cases(x_train, x_test, y_train, d.labeled_tuples)
-
+            is_valid_problem, predicted_labels, predicted_probas = ml_helpers.handle_edge_cases(x_train, x_test, y_train)
+            
             if is_valid_problem:
                 if self.CLASSIFICATION_MODEL == "ABC" or sum(y_train) <= 2:
                     gs_clf = sklearn.ensemble.AdaBoostClassifier(n_estimators=100)
@@ -792,8 +792,11 @@ class Cleaning:
                     raise ValueError('Unknown model.')
 
                 predicted_labels = gs_clf.predict(x_test)
+                predicted_probas = [x[1] for x in gs_clf.predict_proba(x_test)]
 
-            ml_helpers.set_binary_cleaning_suggestions(predicted_labels, error_correction_suggestions, d.corrected_cells)
+            if sum(predicted_labels) > len(column_errors[j]):
+                a = 1
+            ml_helpers.set_binary_cleaning_suggestions(predicted_labels, predicted_probas, x_test, error_correction_suggestions, d.corrected_cells)
 
         if self.LABELING_BUDGET == len(d.labeled_tuples) and self.DATASET_ANALYSIS:
             samples = {c: random.sample(column_errors[c], min(40, len(column_errors[c]))) for c in column_errors}
@@ -882,16 +885,16 @@ if __name__ == "__main__":
     # store results for analysis
     dataset_analysis = True
 
-    dataset_name = "flights"
+    dataset_name = "rayyan"
     error_class = 'simple_mcar'
-    error_fraction = 1
+    error_fraction = 3
     version = 1
     n_rows = None
 
     labeling_budget = 20
     synth_tuples = 100
     synth_cleaning_threshold = 0.9
-    auto_instance_cache_model = False
+    auto_instance_cache_model = True
     clean_with_user_input = True  # Careful: If set to False, d.corrected_cells will remain empty.
     gpdep_threshold = 0.3
     training_time_limit = 30
