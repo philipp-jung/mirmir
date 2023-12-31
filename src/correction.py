@@ -750,9 +750,6 @@ class Cleaning:
         synth_pair_features = d.synth_corrections.assemble_pair_features()
 
         for j in column_errors:
-            if self.LABELING_BUDGET == len(d.labeled_tuples) and j == 5:
-                a = 1
-
             if d.corrections.value_cleaning_pct(column_errors[j]) > 0.3:
                 # disable synth tuples if strong value cleaning suggestions exist.
                 score = 0
@@ -863,23 +860,16 @@ class Cleaning:
                   "------------------------------------------------------------------------")
         self.initialize_models(d)
 
-        ran_without_samples = False
-        while len(d.labeled_tuples) < self.LABELING_BUDGET:
-            if len(d.labeled_tuples) == 0 and not ran_without_samples:  # first run is self-supervised
-                self.prepare_augmented_models(d)
-                self.generate_features(d, synchronous=True)
-                self.generate_synth_features(d, synchronous=True)
-                self.binary_predict_corrections(d)
-                ran_without_samples = True
-            else:  # supervised
-                self.sample_tuple(d, random_seed=random_seed)
-                self.label_with_ground_truth(d)
-                self.update_models(d)
-                self.prepare_augmented_models(d)
-                self.generate_features(d, synchronous=True)
-                self.generate_synth_features(d, synchronous=True)
-                self.binary_predict_corrections(d)
-                self.clean_with_user_input(d)
+        while len(d.labeled_tuples) <= self.LABELING_BUDGET:
+            self.prepare_augmented_models(d)
+            self.generate_features(d, synchronous=True)
+            self.generate_synth_features(d, synchronous=True)
+            self.binary_predict_corrections(d)
+            self.clean_with_user_input(d)
+            self.sample_tuple(d, random_seed=random_seed)
+            self.label_with_ground_truth(d)
+            self.update_models(d)
+
             if self.VERBOSE:
                 p, r, f = d.get_data_cleaning_evaluation(d.corrected_cells)[-3:]
                 print(
@@ -906,7 +896,6 @@ if __name__ == "__main__":
     gpdep_threshold = 0.3
     training_time_limit = 30
     feature_generators = ['auto_instance', 'fd', 'llm_correction', 'llm_master']
-    # feature_generators = ['llm_correction',]
     classification_model = "ABC"
     fd_feature = 'norm_gpdep'
     vicinity_orders = [1]
