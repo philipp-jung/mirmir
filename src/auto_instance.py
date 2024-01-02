@@ -36,11 +36,11 @@ def train_cleaning_model(df: pd.DataFrame,
     # Splitting here maybe needs to be removed, because it doesn't scale well with
     # dataset size. AutoGluon does smart train-test-splits internally, might be reasonable
     # leveraging them. I currently keep this to have control over the data in one place.
-    df_train, df_test = train_test_split(df, test_size=.1)
+    # df_train, df_test = train_test_split(df, test_size=.1)
 
     # Since I concatenate dataframes earlier, duplicate index entries are possible. Which is why I reset the index.
-    df_train.reset_index(drop=True, inplace=True)
-    df_test.reset_index(drop=True, inplace=True)
+    # df_train.reset_index(drop=True, inplace=True)
+    # df_test.reset_index(drop=True, inplace=True)
 
     try:
         if not use_cache:
@@ -55,8 +55,7 @@ def train_cleaning_model(df: pd.DataFrame,
                 output_column=rhs,
                 verbosity=verbosity,
             )
-            imputer.fit(train_df=df_train,
-                        test_df=df_test,
+            imputer.fit(train_df=df,
                         time_limit=time_limit)
 
         except TargetColumnException:

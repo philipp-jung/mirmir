@@ -885,7 +885,7 @@ if __name__ == "__main__":
     # store results for analysis
     dataset_analysis = True
 
-    dataset_name = "rayyan"
+    dataset_name = "flights"
     error_class = 'simple_mcar'
     error_fraction = 3
     version = 1
@@ -894,7 +894,7 @@ if __name__ == "__main__":
     labeling_budget = 20
     synth_tuples = 100
     synth_cleaning_threshold = 0.9
-    auto_instance_cache_model = True
+    auto_instance_cache_model = False
     clean_with_user_input = True  # Careful: If set to False, d.corrected_cells will remain empty.
     gpdep_threshold = 0.3
     training_time_limit = 30

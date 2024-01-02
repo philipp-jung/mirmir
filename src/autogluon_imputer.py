@@ -78,14 +78,11 @@ class AutoGluonImputer():
 
     def fit(self,
             train_df: pd.DataFrame,
-            test_df: pd.DataFrame = None,
             time_limit: int = 30) -> Any:
         """
         Trains AutoGluonImputer model for a single column
 
         :param train_df: training data as dataframe
-        :param test_df: test data as dataframe; if not provided, a ratio of test_split of the
-                            training data are used as test data
         :param test_split: if no test_df is provided this is the ratio of test data to be held
                             separate for determining model convergence
         :param time_limit: time limit for AutoGluon in seconds
@@ -103,9 +100,10 @@ class AutoGluonImputer():
                                       verbosity=self.verbosity,
                                       problem_type='multiclass').\
         fit(train_data=train_df,
-            tuning_data=test_df,
+            #tuning_data=test_df,
             time_limit=time_limit,
             presets='good_quality',
+            #presets='medium_quality',
             calibrate=True,
             verbosity=self.verbosity,
             num_cpus=25)  # funny: num_cpus expects a string, and if you pass a string AG crashes.
