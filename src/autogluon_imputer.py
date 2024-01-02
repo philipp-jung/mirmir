@@ -105,6 +105,7 @@ class AutoGluonImputer():
         fit(train_data=train_df,
             tuning_data=test_df,
             time_limit=time_limit,
+            presets='good_quality',
             calibrate=True,
             verbosity=self.verbosity,
             num_cpus=25)  # funny: num_cpus expects a string, and if you pass a string AG crashes.
