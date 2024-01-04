@@ -98,25 +98,22 @@ class Corrections:
                     pair_features[cell][correction][mi] = pr
         return pair_features
 
-    def value_cleaning_pct(self, errors_in_column: List[Tuple[int, int]], confidence_threshold: float = .9) -> float:
+    def et_valid_corrections_made(self, corrected_cells: Dict[Tuple[int, int], str], column: int) -> int:
         """
-        Per column, calculate the share of value corrections with a confidence higher than confidence_threshold.
-        That resulting percentage can be used to estimate if value cleaning can be leveraged on the dataset.
-        @param errors_in_column: A list with tuples of errors in a column.
-        @param confidence_threshold: The value correction's probability needs to surpass the threshold to be taken into
-        account.
-        @return: Percentage of erronous values per column for which a confident value correction was made.
+        Per column, return how often the corrector leveaging error transformations mentioned the ground truth
+        in its correction suggestions. The result is used to determine if ET models are useful to clean the column
+        Depending on the outcome, the synth_features are discarded.
         """
-        if 'llm_correction' not in self.available_corrections or len(errors_in_column) == 0:
-            return 0.0
-
-        confident_corrections = 0
-        for error_cell in errors_in_column:
-            correction_suggestions = self.correction_store['llm_correction'].get(error_cell)
-            if correction_suggestions is not None and len(correction_suggestions) != 0:
-                if list(correction_suggestions.values())[0] > confidence_threshold:
-                    confident_corrections += 1
-        return confident_corrections/len(errors_in_column)
+        if 'llm_correction' not in self.available_corrections or len(corrected_cells) == 0:
+            return 0
+        
+        ground_truth_mentioned = 0
+        for error_cell, correction in corrected_cells.items():
+            if error_cell[1] == column:
+                correction_suggestions = self.correction_store['llm_correction'].get(error_cell, {})
+                if correction in list(correction_suggestions.keys()):
+                    ground_truth_mentioned += 1
+        return ground_truth_mentioned
 
 
 def connect_to_cache() -> sqlite3.Connection:

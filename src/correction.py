@@ -750,9 +750,9 @@ class Cleaning:
         synth_pair_features = d.synth_corrections.assemble_pair_features()
 
         for j in column_errors:
-            if d.corrections.value_cleaning_pct(column_errors[j]) > 0.3:
-                # disable synth tuples if strong value cleaning suggestions exist.
-                score = 0
+            if d.corrections.et_valid_corrections_made(d.corrected_cells, j) > 0:  # ET model mentioned ground truth once in suggestions
+                score = 0  # drop synth_features to not distort correction classifier.
+
             else:  # evaluate synth tuples.
                 score = ml_helpers.test_synth_data(d,
                                                    pair_features,
@@ -794,8 +794,6 @@ class Cleaning:
                 predicted_labels = gs_clf.predict(x_test)
                 predicted_probas = [x[1] for x in gs_clf.predict_proba(x_test)]
 
-            if sum(predicted_labels) > len(column_errors[j]):
-                a = 1
             ml_helpers.set_binary_cleaning_suggestions(predicted_labels, predicted_probas, x_test, error_correction_suggestions, d.corrected_cells)
 
         if self.LABELING_BUDGET == len(d.labeled_tuples) and self.DATASET_ANALYSIS:
@@ -885,7 +883,7 @@ if __name__ == "__main__":
     # store results for analysis
     dataset_analysis = True
 
-    dataset_name = "rayyan"
+    dataset_name = "beers"
     error_class = 'simple_mcar'
     error_fraction = 3
     version = 1
