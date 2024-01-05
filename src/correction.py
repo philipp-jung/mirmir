@@ -525,8 +525,8 @@ class Cleaning:
                                 correction = '<MV>'
                             error_correction_pairs.append((error, correction))
 
-                # Only do llm_correction cleaning if there are >= 3 examples for cleaning that column.
-                if len(error_correction_pairs) >= 2:
+                # Only do llm_correction cleaning if there is an example for cleaning that column.
+                if len(error_correction_pairs) > 0:
                     prompt = "You are a data cleaning machine that detects patterns to return a correction. If you do "\
                              "not find a correction, you return the token <NULL>. You always follow the example.\n---\n"
                     n_pairs = min(10, len(error_correction_pairs))
@@ -880,12 +880,12 @@ class Cleaning:
 
 
 if __name__ == "__main__":
-    # store results for analysis
+    # store results for detailed analysis
     dataset_analysis = True
 
-    dataset_name = "beers"
+    dataset_name = "glass"
     error_class = 'simple_mcar'
-    error_fraction = 3
+    error_fraction = 1
     version = 1
     n_rows = None
 
@@ -897,6 +897,7 @@ if __name__ == "__main__":
     gpdep_threshold = 0.3
     training_time_limit = 30
     feature_generators = ['auto_instance', 'fd', 'llm_correction', 'llm_master']
+    #feature_generators = ['llm_correction']
     classification_model = "ABC"
     fd_feature = 'norm_gpdep'
     vicinity_orders = [1]

@@ -230,14 +230,20 @@ def fetch_llm(prompt: str,
     retries = 0
     while True:
         try:
-            response = openai.Completion.create(
-                model="text-davinci-003",
-                prompt=prompt,
-                logprobs=3
+            response = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo",
+                messages=[{
+                    'role': 'user',
+                    'content': prompt,
+                }],
+                logprobs=True,
+                top_logprobs=3
             )
-            correction_tokens = response['choices'][0]['logprobs']['tokens']
-            token_logprobs = response['choices'][0]['logprobs']['token_logprobs']
-            top_logprobs = response['choices'][0]['logprobs']['top_logprobs']
+
+            choices = response['choices'][0]
+            correction_tokens = [y['token'] for y in choices['logprobs']['content']]
+            token_logprobs = [y['logprob'] for y in choices['logprobs']['content']]
+            top_logprobs = [{p['token']: p['logprob'] for p in position['top_logprobs']} for position in choices['logprobs']['content']]
             break
         except openai.error.RateLimitError as e:
             if retries > 5:
