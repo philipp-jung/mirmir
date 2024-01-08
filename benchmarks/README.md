@@ -1,6 +1,6 @@
 # Benchmarks
-An important part of the Mirmir paper is its extensive benchmark with existing cleaning solutions.
-Directories at this file's location contain utilities that help create benchmarks for each method Mirmir is compared to.
+An important part of the Mimir paper is its extensive benchmark with existing cleaning solutions.
+Directories at this file's location contain utilities that help create benchmarks for each method Mimir is compared to.
 
 ## GARF
 We ported GARF to sqlite3. Originally, GARF uses an Oracle database, which we are not licensed to work with.

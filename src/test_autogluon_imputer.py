@@ -3,9 +3,8 @@ import pytest
 import numpy as np
 import pandas as pd
 from sklearn.datasets import make_hastie_10_2, fetch_california_housing
-from sklearn.metrics import classification_report
-
 import utils
+
 from autogluon_imputer import AutoGluonImputer
 
 

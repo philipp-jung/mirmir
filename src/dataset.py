@@ -1,14 +1,7 @@
-########################################
 import os
-import re
-import html
 from typing import Union, Dict, Tuple
-
 import pandas as pd
-########################################
 
-
-########################################
 class Dataset:
     """
     The dataset class.
@@ -177,7 +170,7 @@ class Dataset:
 
     def get_df_from_labeled_tuples(self):
         """
-        Added by Philipp. Turns the labeled tuples into a dataframe.
+        Turns the labeled tuples into a dataframe.
         """
         return self.clean_dataframe.iloc[list(self.labeled_tuples.keys()), :]
 

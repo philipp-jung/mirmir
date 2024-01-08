@@ -498,11 +498,11 @@ def cleanest_version(df_dirty: pd.DataFrame, user_input: pd.DataFrame) -> pd.Dat
 
 def mine_fds(df_clean_iterative: pd.DataFrame, df_ground_truth: pd.DataFrame) -> List[FDTuple]:
     """
-    Mine functional dependencies using HyFD. The function calls a jar file called HyFdMirmir-1.3.jar with the following
+    Mine functional dependencies using HyFD. The function calls a jar file called HyFdMimir-1.3.jar with the following
     parameters:
     @param df_clean_iterative: dirty data, enriched with user input. The cleanest version of the dataset we know without
     touching ground-truth.
-    @param df_ground_truth: Ground truth, used by HyFDMirmir to determine error positions.
+    @param df_ground_truth: Ground truth, used by HyFDMimir to determine error positions.
     @return: a dictionary of functional dependencies. The keys are the left-hand-side of the dependency, the values are
     the right-hand-side of the dependency.
     """
@@ -519,14 +519,14 @@ def mine_fds(df_clean_iterative: pd.DataFrame, df_ground_truth: pd.DataFrame) ->
     machine = platform.machine()
 
     if machine == 'arm64' and system == 'Darwin':
-        binary = "HyFDMirmir-1.3-arm64-darwin.jar"
+        binary = "HyFDMimir-1.3-arm64-darwin.jar"
     elif machine == 'x86_64' and system == 'Linux':
-        binary = "HyFDMirmir-1.3-x86_64-linux.jar"
+        binary = "HyFDMimir-1.3-x86_64-linux.jar"
     else:
-        raise ValueError('We have HyFDMirmir precompiled for arm64 darwin and x86_64 linux systems. '
-        'You will have to compile HyFDMirmir for your system and architecture yourself.')
+        raise ValueError('We have HyFDMimir precompiled for arm64 darwin and x86_64 linux systems. '
+        'You will have to compile HyFDMimir for your system and architecture yourself.')
 
-    # Execute HyFDMirmir. Do not write output to stdout.
+    # Execute HyFDMimir. Do not write output to stdout.
     try:
         subprocess.run(["java", "-jar", binary, dirty_path, clean_path, fd_path],
                        stdout=subprocess.DEVNULL)
@@ -545,7 +545,7 @@ def mine_fds(df_clean_iterative: pd.DataFrame, df_ground_truth: pd.DataFrame) ->
             lhs, rhs = line.split("->")
             rhs = rhs.strip()
             if len(lhs) == 0:
-                print('WARNING: Mined FD with empty LHS: ' + line)
+                pass
             else:
                 lhs = tuple(sorted([int(x) for x in lhs.split(",")]))
                 rhs = int(rhs.strip())

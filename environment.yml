@@ -1,4 +1,4 @@
-name: mirmir
+name: mimir
 channels:
   - conda-forge
 dependencies:
@@ -370,4 +370,4 @@ dependencies:
   - zstd=1.5.5=h4f39d0f_0
   - pip:
       - sentencepiece==0.1.96
-prefix: /Users/philipp/miniforge3/envs/mirmir
+prefix: /Users/philipp/miniforge3/envs/mimir

@@ -1,11 +1,3 @@
-########################################
-# Mirmir: A Holistic Value Imputation System
-# Philipp Jung
-# philippjung@posteo.de
-# July 2023
-# All Rights Reserved
-########################################
-
 import os
 import math
 import json
@@ -36,7 +28,7 @@ import ml_helpers
 
 class Cleaning:
     """
-    The main class.
+    Class that carries out the error correction process.
     """
 
     def __init__(self, labeling_budget: int, classification_model: str, clean_with_user_input: bool, feature_generators: List[str],
@@ -53,7 +45,7 @@ class Cleaning:
         @param clean_with_user_input: Take user input to clean data with. This will always improve cleaning performance,
         and is recommended to set to True as the default value. Handy to disable when debugging models.
         @param feature_generators: Six feature generators are available: 'auto_instance', 'domain_instance', 'fd', 'vicinity',
-        'llm"master', 'llm_correction'.  Pass them as strings in a list to make Mirmir use them, e.g.
+        'llm"master', 'llm_correction'.  Pass them as strings in a list to make Mimir use them, e.g.
         ['domain_instance', 'vicinity', 'auto_instance'].
         @param vicinity_orders: The pdep approach enables the usage of higher-order dependencies to clean data. Each
         order used is passed as an integer, e.g. [1, 2]. Unary dependencies would be used by passing [1] for example.
@@ -66,7 +58,7 @@ class Cleaning:
         measure. After ranking, the n_best_pdeps dependencies are used to provide cleaning suggestions. A good heuristic
         is to set this to 3.
         @param training_time_limit: Limit in seconds of how long the AutoGluon imputer model is trained.
-        @param synth_tuples: maximum number of tuples to synthesize training data with.
+        @param synth_tuples: maximum number of tuples to infer training data from.
         @param synth_cleaning_threshold: Threshold for column-cleaning to pass in order to leverage synth-data.
         Deactivates if set to -1.
         @param test_synth_data_direction: Direction in which the synth data's usefulness for cleaning is being tested.
@@ -79,10 +71,9 @@ class Cleaning:
         @param gpdep_threshold: Threshold a suggestion's gpdep score must pass before it is used to generate a feature.
         @param fd_feature: Feature used by the the fd_instance imputer to make cleaning suggestions. Choose from ('gpdep', 'pdep', 'fd').
         @param domain_model_threshold: If a value model's correction suggestion's pr is smaller than the threshold, it is discarded.
-        @param dataset_analysis: Write a detailed analysis of how Mirmir cleans a a dataset to a .json file.
+        @param dataset_analysis: Write a detailed analysis of how Mimir cleans a a dataset to a .json file.
         """
 
-        # Philipps changes
         self.SYNTH_TUPLES = synth_tuples
         self.CLEAN_WITH_USER_INPUT = clean_with_user_input
 
@@ -103,7 +94,7 @@ class Cleaning:
         self.MAX_VALUE_LENGTH = 50
         self.LABELING_BUDGET = labeling_budget
 
-        # TODO check if these are necessary
+        # TODO remove unused attributes
         self.IGNORE_SIGN = "<<<IGNORE_THIS_VALUE>>>"
         self.VERBOSE = False
         self.SAVE_RESULTS = False
@@ -271,8 +262,6 @@ class Cleaning:
                     }
                     self._domain_based_model_updater(d.domain_models, update_dictionary)
 
-        # BEGIN Philipp's changes
-
         # Initialize LLM cache
         conn = helpers.connect_to_cache()
         cursor = conn.cursor()
@@ -308,7 +297,7 @@ class Cleaning:
                 corrections_features.append(feature)
 
         d.corrections = helpers.Corrections(corrections_features)
-        d.synth_corrections = helpers.Corrections(corrections_features)
+        d.inferred_corrections = helpers.Corrections(corrections_features)
 
         d.vicinity_models = {}
         d.value_models = [{}, {}, {}, {}]
@@ -323,13 +312,9 @@ class Cleaning:
                     ignore_sign=self.IGNORE_SIGN)
         d.imputer_models = {}
 
-        if self.VERBOSE:
-            print("The error corrector models are initialized.")
-
     def sample_tuple(self, d, random_seed):
         """
         This method samples a tuple.
-        Philipp extended this with a random_seed in an effort to make runs reproducible.
 
         I also added two tiers of columns to choose samples from. Either, there are error cells
         for which no correction suggestion has been made yet. In that case, we sample from these error cells.
@@ -377,8 +362,6 @@ class Cleaning:
         # zufällig gewählt wird.
         # print(np.argwhere(tuple_score == np.amax(tuple_score)).flatten())
         d.sampled_tuple = rng.choice(np.argwhere(tuple_score == np.amax(tuple_score)).flatten())
-        if self.VERBOSE:
-            print("Tuple {} is sampled.".format(d.sampled_tuple))
         self.sampled_tuples += 1
 
     def label_with_ground_truth(self, d):
@@ -396,8 +379,6 @@ class Cleaning:
             if d.dataframe.iloc[cell] != d.clean_dataframe.iloc[cell]:
                 error_label = 1
             d.labeled_cells[cell] = [error_label, d.clean_dataframe.iloc[cell]]
-        if self.VERBOSE:
-            print("Tuple {} is labeled.".format(d.sampled_tuple))
 
     def update_models(self, d):
         """
@@ -431,7 +412,6 @@ class Cleaning:
                     # gelabelt war.
                     d.detected_cells[cell] = self.IGNORE_SIGN
 
-        # BEGIN Philipp's changes
         if 'vicinity' in self.FEATURE_GENERATORS:
             for o in self.VICINITY_ORDERS:
                 pdep.update_vicinity_model(counts_dict=d.vicinity_models[o],
@@ -440,10 +420,8 @@ class Cleaning:
                                            error_positions=d.detected_cells,
                                            row=d.sampled_tuple)
 
-        # END Philipp's changes
-
         if self.VERBOSE:
-            print("The error corrector models are updated with new labeled tuple {}.".format(d.sampled_tuple))
+            print("The user labeled an additional tuple: {}.".format(d.sampled_tuple))
 
     def _feature_generator_process(self, args) -> List[Tuple[Tuple[int, int], str, Union[str, None]]]:
         """
@@ -466,11 +444,10 @@ class Cleaning:
                             "vicinity": list(d.dataframe.iloc[error_cell[0], :]),
                             "row": error_cell[0]}
 
-        # Begin Philipps Changes
         if "fd" in self.FEATURE_GENERATORS:
             fd_corrections = pdep.fd_based_corrector(d.fd_inverted_gpdeps, d.fd_counts_dict, error_dictionary, self.FD_FEATURE)
             if is_synth:
-                d.synth_corrections.get('fd')[error_cell] = fd_corrections
+                d.inferred_corrections.get('fd')[error_cell] = fd_corrections
             else:
                 d.corrections.get('fd')[error_cell] = fd_corrections
 
@@ -482,7 +459,7 @@ class Cleaning:
                         ed=error_dictionary)
                     if is_synth:
                         for lhs in naive_corrections:
-                            d.synth_corrections.get(f'vicinity_{o}_{str(lhs)}')[error_cell] = naive_corrections[lhs]
+                            d.inferred_corrections.get(f'vicinity_{o}_{str(lhs)}')[error_cell] = naive_corrections[lhs]
                     else:
                         for lhs in naive_corrections:
                             d.corrections.get(f'vicinity_{o}_{str(lhs)}')[error_cell] = naive_corrections[lhs]
@@ -497,7 +474,7 @@ class Cleaning:
                         features_selection=self.PDEP_FEATURES,
                         gpdep_threshold=self.GPDEP_THRESHOLD)
                     if is_synth:
-                        d.synth_corrections.get(f'vicinity_{o}')[error_cell] = pdep_corrections
+                        d.inferred_corrections.get(f'vicinity_{o}')[error_cell] = pdep_corrections
                     else:
                         d.corrections.get(f'vicinity_{o}')[error_cell] = pdep_corrections
             else:
@@ -559,7 +536,7 @@ class Cleaning:
 
         if "domain_instance" in self.FEATURE_GENERATORS:
             if is_synth:
-                d.synth_corrections.get('domain_instance')[error_cell] = self._domain_based_corrector(d.domain_models, error_dictionary)
+                d.inferred_corrections.get('domain_instance')[error_cell] = self._domain_based_corrector(d.domain_models, error_dictionary)
             else:
                 d.corrections.get('domain_instance')[error_cell] = self._domain_based_corrector(d.domain_models, error_dictionary)
 
@@ -583,14 +560,14 @@ class Cleaning:
             if len(d.labeled_tuples) == self.LABELING_BUDGET and len(imputer_corrections) == 0:
                 imputer_corrections = {}
             if is_synth:
-                d.synth_corrections.get('auto_instance')[error_cell] = imputer_corrections
+                d.inferred_corrections.get('auto_instance')[error_cell] = imputer_corrections
             else:
                 d.corrections.get('auto_instance')[error_cell] = imputer_corrections
         return ai_prompts
 
     def prepare_augmented_models(self, d):
         """
-        Prepare augmented models that Philipp added:
+        Prepare Mimir's augmented models:
         1) Calculate gpdeps and append them to d.
         2) Train auto_instance model for each column.
         """
@@ -658,9 +635,7 @@ class Cleaning:
 
     def generate_features(self, d, synchronous):
         """
-        This method generates a feature vector for each pair of a data error
-        and a potential correction.
-        Philipp added a `synchronous` parameter to make debugging easier.
+        Use correctors to generate correction features.
         """
         ai_prompts: List[Tuple[Tuple[int, int], str, Union[str, None]]] = []
         process_args_list = [[d, cell, False] for cell in d.detected_cells]
@@ -684,9 +659,9 @@ class Cleaning:
                 d.corrections.get(model_name)[error_cell] = correction_dicts
 
         if self.VERBOSE:
-            print("Features generated.")
+            print("User Features Generated.")
 
-    def generate_synth_features(self, d, synchronous):
+    def generate_inferred_features(self, d, synchronous):
         """
         Generate additional training data by using data from the dirty dataframe. This leverages the information about
         error positions, carefully avoiding additional training data that contains known errors.
@@ -734,10 +709,10 @@ class Cleaning:
             #     if cache is not None:
             #         correction, token_logprobs, top_logprobs = cache
             #         correction_dicts = helpers.llm_response_to_corrections(correction, token_logprobs, top_logprobs)
-            #         d.synth_corrections.get(model_name)[error_cell] = correction_dicts
+            #         d.inferred_corrections.get(model_name)[error_cell] = correction_dicts
 
             if self.VERBOSE:
-                print("Synth features generated.")
+                print("Inferred Features Generated.")
 
 
     def binary_predict_corrections(self, d):
@@ -747,11 +722,11 @@ class Cleaning:
         error_positions = helpers.ErrorPositions(d.detected_cells, d.dataframe.shape, d.labeled_cells)
         column_errors = error_positions.original_column_errors()
         pair_features = d.corrections.assemble_pair_features()
-        synth_pair_features = d.synth_corrections.assemble_pair_features()
+        synth_pair_features = d.inferred_corrections.assemble_pair_features()
 
         for j in column_errors:
             if d.corrections.et_valid_corrections_made(d.corrected_cells, j) > 0:  # ET model mentioned ground truth once in suggestions
-                score = 0  # drop synth_features to not distort correction classifier.
+                score = 0  # drop inferred_features to not distort correction classifier.
 
             else:  # evaluate synth tuples.
                 score = ml_helpers.test_synth_data(d,
@@ -841,30 +816,23 @@ class Cleaning:
         if not os.path.exists(ec_folder_path):
             os.mkdir(ec_folder_path)
         pickle.dump(d, open(os.path.join(ec_folder_path, "correction.dataset"), "wb"))
-        if self.VERBOSE:
-            print("The results are stored in {}.".format(os.path.join(ec_folder_path, "correction.dataset")))
 
     def run(self, d, random_seed):
         """
-        This method runs Mirmir on an input dataset to correct data errors.
+        This method runs Mimir on an input dataset to correct data errors.
         """
-        if self.VERBOSE:
-            print("------------------------------------------------------------------------\n"
-                  "---------------------Initialize the Dataset Object----------------------\n"
-                  "------------------------------------------------------------------------")
         d = self.initialize_dataset(d)
         if len(d.detected_cells) == 0:
             raise ValueError('There are no errors in the data to correct.')
         if self.VERBOSE:
-            print("------------------------------------------------------------------------\n"
-                  "--------------------Initialize Error Corrector Models-------------------\n"
-                  "------------------------------------------------------------------------")
+            text = f"Start Mimir To Correct Dataset {d.name}"
+            print(f"{text}\n")
         self.initialize_models(d)
 
         while len(d.labeled_tuples) <= self.LABELING_BUDGET:
             self.prepare_augmented_models(d)
             self.generate_features(d, synchronous=True)
-            self.generate_synth_features(d, synchronous=True)
+            self.generate_inferred_features(d, synchronous=True)
             self.binary_predict_corrections(d)
             self.clean_with_user_input(d)
             self.sample_tuple(d, random_seed=random_seed)
@@ -874,7 +842,7 @@ class Cleaning:
             if self.VERBOSE:
                 p, r, f = d.get_data_cleaning_evaluation(d.corrected_cells)[-3:]
                 print(
-                    "Cleaning performance on {}:\nPrecision = {:.2f}\nRecall = {:.2f}\nF1 = {:.2f}".format(d.name, p, r,
+                    "Cleaning performance on {}:\nPrecision = {:.2f}\nRecall = {:.2f}\nF1 = {:.2f}\n".format(d.name, p, r,
                                                                                                            f))
         return d.corrected_cells
 
@@ -883,11 +851,11 @@ if __name__ == "__main__":
     # store results for detailed analysis
     dataset_analysis = True
 
-    dataset_name = "glass"
+    dataset_name = "151"
     error_class = 'simple_mcar'
-    error_fraction = 1
+    error_fraction = 5
     version = 1
-    n_rows = None
+    n_rows = 1000
 
     labeling_budget = 20
     synth_tuples = 100

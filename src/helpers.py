@@ -102,7 +102,7 @@ class Corrections:
         """
         Per column, return how often the corrector leveaging error transformations mentioned the ground truth
         in its correction suggestions. The result is used to determine if ET models are useful to clean the column
-        Depending on the outcome, the synth_features are discarded.
+        Depending on the outcome, the inferred_features are discarded.
         """
         if 'llm_correction' not in self.available_corrections or len(corrected_cells) == 0:
             return 0

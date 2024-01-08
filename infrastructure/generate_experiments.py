@@ -10,7 +10,7 @@ def combine_configs(ranges: dict, config: dict, runs: int):
     static config.
     ranges: dict of lists, where the key identifier the config-parameter,
     and the list contains possible values for that parameter.
-    config: dict containing all parameters needed to run Mirmir. Keys
+    config: dict containing all parameters needed to run Mimir. Keys
     contained in ranges get overwritten.
     runs: integer indicating how often a measurement should be repeated with
     one combination.

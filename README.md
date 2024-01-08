@@ -1,9 +1,11 @@
-# Mirmir: A Holistic Value Imputation System
-Mirmir is a state-of-the-art value cleaning system.
+# Mimir: A Holistic Value Imputation System
+Mimir is a state-of-the-art error correction system.
+
+![Boxplot comparing Mimir to Baran, another state-of-the-art error correction system.](./notebook/img/2023-12-21-mirmir-vs-baran.pdf)
 
 ## Installation
-Mirmir can be executed on any platform using `conda` or `mamba`.
-To install Mirmir on your machine, follow these steps:
+Mimir can be executed on any platform using `conda` or `mamba`.
+To install Mimir on your machine, follow these steps:
 
 1) Install Miniforge3 on you machine.\
 Follow the [official installation instructions](https://github.com/conda-forge/miniforge#download).
@@ -15,8 +17,7 @@ Follow these instructions to clean data with `mirmir`:
 
 1) Run `conda activate mirmir` to activate the `mirmir` environment.
 1) Navigate into the `src/` folder in the directory into which you cloned `mirmir`.
-1) Run `python correction.py` to correct sample data errors.
-
+1) Run `python correction.py` to correct sample data errors. Set parameters at the bottom of `correction.py` to adjust the correction process.
 
 ## Experiments
-For a fancy experimental setups, consider installing [`ruska`](https://github.com/philipp-jung/ruska) and running `raha/run_experiments.py`.
+To run our experiments, consider the `README.md` file in the the `infrastructure/` directory.
