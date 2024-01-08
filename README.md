@@ -1,7 +1,7 @@
 # Mimir: A Holistic Value Imputation System
 Mimir is a state-of-the-art error correction system.
 
-![Boxplot comparing Mimir to Baran, another state-of-the-art error correction system.](./notebook/img/2023-12-21-mirmir-vs-baran.pdf)
+![Boxplot comparing Mimir to Baran, another state-of-the-art error correction system.](./notebook/img/2023-12-21-mirmir-vs-baran.png)
 
 ## Installation
 Mimir can be executed on any platform using `conda` or `mamba`.
